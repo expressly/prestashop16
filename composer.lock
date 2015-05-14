@@ -129,12 +129,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/expressly/php-common.git",
-                "reference": "8f5c238e72c5ebe471121a75f677b94076fc5c01"
+                "reference": "938b3de779313cc571479d59df499642fec075d1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/expressly/php-common/zipball/8f5c238e72c5ebe471121a75f677b94076fc5c01",
-                "reference": "8f5c238e72c5ebe471121a75f677b94076fc5c01",
+                "url": "https://api.github.com/repos/expressly/php-common/zipball/938b3de779313cc571479d59df499642fec075d1",
+                "reference": "938b3de779313cc571479d59df499642fec075d1",
                 "shasum": ""
             },
             "require": {
@@ -170,7 +170,7 @@
                 "source": "https://github.com/expressly/php-common/tree/master",
                 "issues": "https://github.com/expressly/php-common/issues"
             },
-            "time": "2015-05-13 14:12:11"
+            "time": "2015-05-14 18:09:58"
         },
         {
             "name": "kriswallsmith/buzz",
