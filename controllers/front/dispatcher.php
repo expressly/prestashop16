@@ -19,9 +19,9 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
             Tools::redirect("sendcustomer&fc=module&module=expressly&email={$email}");
         }
 
-        if (preg_match("/^\/?expressly\/api\/([\w]+)\/?$/", $query, $matches)) {
+        if (preg_match("/^\/?expressly\/api\/([\w-]+)\/?$/", $query, $matches)) {
             $key = array_pop($matches);
-            Tools::redirect("migrate&fc=module&module=expressly&key={$key}");
+            Tools::redirect("migratestart&fc=module&module=expressly&uuid={$key}");
         }
 
         Tools::redirect('/');

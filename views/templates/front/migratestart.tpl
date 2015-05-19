@@ -1,0 +1,1 @@
+{$xly_popup}

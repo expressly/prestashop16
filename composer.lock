@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "a30f978bc11e0af12255f09bf2d8466d",
+    "hash": "51dc5e57b1b73259f661b2551168ec6b",
     "packages": [
         {
             "name": "deralex/yaml-config-service-provider",
@@ -129,12 +129,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/expressly/php-common.git",
-                "reference": "3315fc59d72d5a54a463b9ab59ddcd03ffa345cb"
+                "reference": "ee4d507d3b738a1386d74edb9f26f9ec9e167ae7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/expressly/php-common/zipball/3315fc59d72d5a54a463b9ab59ddcd03ffa345cb",
-                "reference": "3315fc59d72d5a54a463b9ab59ddcd03ffa345cb",
+                "url": "https://api.github.com/repos/expressly/php-common/zipball/ee4d507d3b738a1386d74edb9f26f9ec9e167ae7",
+                "reference": "ee4d507d3b738a1386d74edb9f26f9ec9e167ae7",
                 "shasum": ""
             },
             "require": {
@@ -170,7 +170,7 @@
                 "source": "https://github.com/expressly/php-common/tree/master",
                 "issues": "https://github.com/expressly/php-common/issues"
             },
-            "time": "2015-05-14 18:24:32"
+            "time": "2015-05-19 10:08:03"
         },
         {
             "name": "kriswallsmith/buzz",

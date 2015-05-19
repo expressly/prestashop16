@@ -1,7 +1,5 @@
 <?php
 
-use Expressly\Client;
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -28,73 +26,64 @@ class Expressly extends ModuleCore
 
         $this->displayName = 'Expressly';
         $this->description = 'Description.';
-        $this->confirmUninstall = 'Sure';
-
-//        $this->registerHook('moduleRoutes');
-
-//        $context = ContextCore::getContext();
-//        $language = $context->language->id;
-//        $shop = $context->shop->id;
-//        $dispatcher = DispatcherCore::getInstance();
-//        $dispatcher->addRoute('module-expressly-dispatcher', 'expressly/api/{id}', 'expresslydispatcher', $language, array(), array(), $shop);
-////        $dispatcher->addRoute('module-expressly-migrate', 'expressly/api/user/{email}', 'expresslymigrate', $language, array(), array(), $shop);
-//        $dispatcher->addRoute('module-expressly-ping', 'module/expressly/expressly/ping', 'expresslyping', null, array(
-////            'module' => array('regexp' => 'expressly', 'param' => 'module'),
-////            'controller' => array('regexp' => 'expresslyping', 'param' => 'controller')
-//        ), array(
-////            'params' => array('fc' => 'module')
-//        ), null);
-//        $dispatcher->addRoute('module-expressly-migrate', 'xly/hi', 'expresslytest2', Context::getContext()->language->id, array(), array(), Context::getContext()->shop->id);
-
-//        $this->registerHook('moduleRoutes');
-//        $dispatcher->addRoute('expressly_migrate', 'xly/hi', 'expresslytest2');
-
-//        var_dump($dispatcher->createUrl('module-expressly-ping'));
-//        die;
-
+        $this->confirmUninstall = 'Are you sure you want to uninstall?';
+        require __DIR__ . '/vendor/autoload.php';
         $this->setup();
-
-//        if (!Configuration::get(''))
     }
 
-    /*
-     * Run up method of db migration
-     * Create password
-     * Dispatch password event
-     * Dispatch hostname event
-     */
     public function install()
     {
         if (!parent::install()) {
             return false;
         }
 
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', sprintf('//%s', $_SERVER['HTTP_HOST']));
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', Expressly\Entity\Merchant::createPassword());
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
+            sprintf('//%s/%s', $_SERVER['HTTP_HOST'], '?controller=dispatcher&fc=module&module=expressly&xly='));
+
+        $merchant = $this->app['merchant.provider']->getMerchant();
+        $this->dispatcher->dispatch('merchant.register', new Expressly\Event\MerchantEvent($merchant));
+
         return true;
     }
 
     public function getContent()
     {
-        return 'hi';
+        return ConfigurationCore::get('EXPRESSLY_PREFERENCES_HOST');
     }
 
-    /*
-     * Run down method of db migration
-     * Tell xly that we're uninstalling?
-     */
     public function uninstall()
     {
         if (!parent::uninstall()) {
             return false;
         }
 
+        $merchant = $this->app['merchant.provider']->getMerchant();
+        $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\MerchantEvent($merchant));
+
+        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_HOST');
+        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_DESTINATION');
+        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_OFFER');
+        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PASSWORD');
+        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PATH');
+
         return true;
     }
 
     private function setup()
     {
-        require __DIR__ . '/vendor/autoload.php';
-        $expressly = new Client();
-        $this->app = $expressly->getApp();
+        $expressly = new Expressly\Client();
+        $app = $expressly->getApp();
+
+        // override MerchantProvider
+        $app['merchant.provider'] = $app->share(function ($app) {
+            return new Module\Expressly\MerchantProvider();
+        });
+
+        $this->app = $app;
         $this->dispatcher = $this->app['dispatcher'];
     }
 }
