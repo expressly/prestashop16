@@ -140,6 +140,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
         }
 
+        // TODO: Log user in
+
         Tools::redirect('/');
 
         parent::init();
