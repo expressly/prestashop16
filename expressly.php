@@ -37,12 +37,11 @@ class Expressly extends ModuleCore
             return false;
         }
 
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', sprintf('//%s', $_SERVER['HTTP_HOST']));
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', sprintf('://%s', $_SERVER['HTTP_HOST']));
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', Expressly\Entity\Merchant::createPassword());
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
-            sprintf('//%s/%s', $_SERVER['HTTP_HOST'], '?controller=dispatcher&fc=module&module=expressly&xly='));
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH', '?controller=dispatcher&fc=module&module=expressly&xly=');
 
         $merchant = $this->app['merchant.provider']->getMerchant();
         $this->dispatcher->dispatch('merchant.register', new Expressly\Event\MerchantEvent($merchant));
@@ -64,9 +63,9 @@ class Expressly extends ModuleCore
                     Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD'));
 
                 // Send update
-//                $merchant = $this->app['merchant.provider']->getMerchant(true);
-//                $event = new Expressly\Event\MerchantNewPasswordEvent($merchant, $oldPassword);
-//                $this->dispatcher->dispatch('merchant.password.update', $event);
+                $merchant = $this->app['merchant.provider']->getMerchant(true);
+                $event = new Expressly\Event\MerchantNewPasswordEvent($merchant, $oldPassword);
+                $this->dispatcher->dispatch('merchant.password.update', $event);
             }
         }
 
