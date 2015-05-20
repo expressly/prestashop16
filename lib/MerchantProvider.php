@@ -36,9 +36,9 @@ class MerchantProvider implements MerchantProviderInterface
         return $this;
     }
 
-    public function getMerchant()
+    public function getMerchant($update = false)
     {
-        if (!$this->merchant instanceof Merchant) {
+        if (!$this->merchant instanceof Merchant || $update) {
             $this->updateMerchant();
         }
 

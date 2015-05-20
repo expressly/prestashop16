@@ -38,7 +38,7 @@ class Expressly extends ModuleCore
         }
 
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', sprintf('//%s', $_SERVER['HTTP_HOST']));
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', Expressly\Entity\Merchant::createPassword());
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
@@ -52,7 +52,101 @@ class Expressly extends ModuleCore
 
     public function getContent()
     {
-        return ConfigurationCore::get('EXPRESSLY_PREFERENCES_HOST');
+        if (Tools::isSubmit('submitExpresslyPreferences')) {
+            ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION',
+                Tools::getValue('EXPRESSLY_PREFERENCES_DESTINATION'));
+            ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER',
+                Tools::getValue('EXPRESSLY_PREFERENCES_OFFER'));
+
+            if (ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD') != Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD')) {
+                $oldPassword = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
+                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD',
+                    Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD'));
+
+                // Send update
+//                $merchant = $this->app['merchant.provider']->getMerchant(true);
+//                $event = new Expressly\Event\MerchantNewPasswordEvent($merchant, $oldPassword);
+//                $this->dispatcher->dispatch('merchant.password.update', $event);
+            }
+        }
+
+        return $this->displayForm();
+    }
+
+    public function displayForm()
+    {
+        $fields = array(
+            'form' => array(
+                'legend' => array(
+                    'title' => 'Expressly',
+                    'icon' => 'icon-cogs'
+                ),
+                'input' => array(
+                    array(
+                        'type' => 'text',
+                        'label' => 'Destination',
+                        'desc' => 'Redirect destination after checkout',
+                        'name' => 'EXPRESSLY_PREFERENCES_DESTINATION',
+                        'required' => false
+                    ),
+                    array(
+                        'type' => 'switch',
+                        'label' => 'Show offers',
+                        'desc' => 'Show offers after checkout',
+                        'name' => 'EXPRESSLY_PREFERENCES_OFFER',
+                        'is_bool' => true,
+                        'values' => array(
+                            array(
+                                'id' => 'active_on',
+                                'value' => true,
+                                'label' => 'Enabled'
+                            ),
+                            array(
+                                'id' => 'active_off',
+                                'value' => false,
+                                'label' => 'Disabled'
+                            )
+                        )
+                    ),
+                    array(
+                        'type' => 'text',
+                        'label' => 'Password',
+                        'desc' => 'Expressly password for your store',
+                        'name' => 'EXPRESSLY_PREFERENCES_PASSWORD',
+                        'required' => false
+                    )
+                ),
+                'submit' => array(
+                    'title' => 'Save'
+                )
+            )
+        );
+
+        $form = new HelperFormCore();
+        $form->module = $this;
+        $form->show_toolbar = false;
+        $form->table = $this->table;
+        $form->identifier = $this->identifier;
+        $form->submit_action = 'submitExpresslyPreferences';
+        $form->token = Tools::getAdminTokenLite('AdminModules');
+//        $form->tpl_vars = array(
+//            'fields_value' => array(
+//                'EXPRESSLY_PREFERENCES_DESTINATION' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION'),
+//                'EXPRESSLY_PREFERENCES_OFFER' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER'),
+//                'EXPRESSLY_PREFERENCES_PASSWORD' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD')
+//            ),
+//            'languages' => $this->context->controller->getLanguages(),
+//            'id_language' => $this->context->language->id
+//        );
+
+        $form->fields_value['EXPRESSLY_PREFERENCES_DESTINATION'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION');
+        $form->fields_value['EXPRESSLY_PREFERENCES_OFFER'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER');
+        $form->fields_value['EXPRESSLY_PREFERENCES_PASSWORD'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
+
+        $language = new LanguageCore((int)ConfigurationCore::get('PS_LANG_DEFAULT'));
+        $form->default_form_language = $language->id;
+
+        return $form->generateForm(array($fields));
     }
 
     public function uninstall()
