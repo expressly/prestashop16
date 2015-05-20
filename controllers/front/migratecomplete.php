@@ -6,14 +6,6 @@ use Expressly\Event\CustomerMigrateEvent;
 
 class expresslymigratecompleteModuleFrontController extends ModuleFrontControllerCore
 {
-    private $db;
-
-    public function __construct()
-    {
-        $this->db = Db::getInstance();
-        parent::__construct();
-    }
-
     public function init()
     {
         // get key from url
@@ -42,7 +34,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
         $email = $json['migration']['data']['email'];
         $id = CustomerCore::customerExists($email, true);
-        $psCustomer = null;
+        $psCustomer = new CustomerCore();
 
         if ($id) {
             $psCustomer = new CustomerCore($id);
@@ -52,12 +44,10 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
         if ($json != 'user_already_migrated' && !$id) {
             $customer = $json['migration']['data']['customerData'];
 
-            $psCustomer = new CustomerCore();
-
             $psCustomer->firstname = $customer['firstName'];
             $psCustomer->lastname = $customer['lastName'];
             $psCustomer->email = $email;
-            $psCustomer->passwd = 'placeholder';
+            $psCustomer->passwd = md5('xly' . microtime());
             $psCustomer->id_gender = $customer['gender'] && $customer['gender'] == Customer::GENDER_FEMALE ? 2 : 1;
             $psCustomer->newsletter = true;
             $psCustomer->optin = true;
@@ -104,8 +94,16 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
         }
 
+        $cartId = $psCustomer->getLastCart(false);
+        $psCart = new CartCore($cartId, $this->context->language->id);
+        $psCart->id_currency = 1;
+
+        if (is_null($cartId)) {
+            $psCart->id_customer = $id;
+            $psCart->add();
+        }
+
         if (!empty($json['migration']['cart'])) {
-            $psCart = $psCustomer->getLastCart(false);
             if (!empty($json['migration']['cart']['productId'])) {
                 $psCart->updateQty(1, $json['migration']['cart']['productId']);
             }
@@ -117,6 +115,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psCart->addCartRule($psCouponId);
                 }
             }
+
+            $psCart->add();
         }
 
         $mailUser = ConfigurationCore::get('PS_MAIL_USER');
@@ -143,7 +143,21 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
         }
 
-        // TODO: Log user in
+        // Forcefully log user in
+        $psCustomer->logged = 1;
+        $this->context->customer = $psCustomer;
+
+        $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
+            $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
+        $this->context->cookie->id_customer = (int)($psCustomer->id);
+        $this->context->cookie->customer_lastname = $psCustomer->lastname;
+        $this->context->cookie->customer_firstname = $psCustomer->firstname;
+        $this->context->cookie->logged = 1;
+        $this->context->cookie->is_guest = $psCustomer->isGuest();
+        $this->context->cookie->passwd = $psCustomer->passwd;
+        $this->context->cookie->email = $psCustomer->email;
+        $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
+        $this->context->cookie->write();
 
         Tools::redirect('/');
 
