@@ -14,8 +14,10 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
             Tools::redirect('ping&fc=module&module=expressly');
         }
 
-        if (preg_match("/^\/?expressly\/api\/user\/([\w]+@[\w]+\.{1}[\w]{1,3}[\.[\w]{2,4}]?)\/?$/", $query, $matches)) {
+        if (preg_match("/^\/?expressly\/api\/user\/([\w-\.]+@[\w-\.]+)\/?$/", $query, $matches)) {
             $email = array_pop($matches);
+
+            var_dump($email);die;
             Tools::redirect("sendcustomer&fc=module&module=expressly&email={$email}");
         }
 
