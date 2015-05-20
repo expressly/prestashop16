@@ -119,24 +119,28 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
         }
 
-        $context = ContextCore::getContext();
+        $mailUser = ConfigurationCore::get('PS_MAIL_USER');
+        $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
+        if (!empty($mailUser) && !empty($mailPass)) {
+            $context = ContextCore::getContext();
 
-        if (MailCore::Send(
-            $context->language->id,
-            'password_query',
-            MailCore::l('Password query confirmation'),
-            $mail_params = array(
-                '{email}' => $psCustomer->email,
-                '{lastname}' => $psCustomer->lastname,
-                '{firstname}' => $psCustomer->firstname,
-                '{url}' => $context->link->getPageLink('password', true, null,
-                    'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
-            ),
-            $psCustomer->email,
-            sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
-        )
-        ) {
-            $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
+            if (MailCore::Send(
+                $context->language->id,
+                'password_query',
+                MailCore::l('Password query confirmation'),
+                $mail_params = array(
+                    '{email}' => $psCustomer->email,
+                    '{lastname}' => $psCustomer->lastname,
+                    '{firstname}' => $psCustomer->firstname,
+                    '{url}' => $context->link->getPageLink('password', true, null,
+                        'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
+                ),
+                $psCustomer->email,
+                sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
+            )
+            ) {
+                $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
+            }
         }
 
         // TODO: Log user in
