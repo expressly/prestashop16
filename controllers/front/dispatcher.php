@@ -16,8 +16,6 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 
         if (preg_match("/^\/?expressly\/api\/user\/([\w-\.]+@[\w-\.]+)\/?$/", $query, $matches)) {
             $email = array_pop($matches);
-
-            var_dump($email);die;
             Tools::redirect("sendcustomer&fc=module&module=expressly&email={$email}");
         }
 
