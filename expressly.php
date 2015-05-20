@@ -128,15 +128,6 @@ class Expressly extends ModuleCore
         $form->identifier = $this->identifier;
         $form->submit_action = 'submitExpresslyPreferences';
         $form->token = Tools::getAdminTokenLite('AdminModules');
-//        $form->tpl_vars = array(
-//            'fields_value' => array(
-//                'EXPRESSLY_PREFERENCES_DESTINATION' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION'),
-//                'EXPRESSLY_PREFERENCES_OFFER' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER'),
-//                'EXPRESSLY_PREFERENCES_PASSWORD' => ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD')
-//            ),
-//            'languages' => $this->context->controller->getLanguages(),
-//            'id_language' => $this->context->language->id
-//        );
 
         $form->fields_value['EXPRESSLY_PREFERENCES_DESTINATION'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION');
         $form->fields_value['EXPRESSLY_PREFERENCES_OFFER'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER');

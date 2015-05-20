@@ -36,42 +36,43 @@ class expresslysendcustomerModuleFrontController extends ModuleFrontControllerCo
 
             $first = true;
             $context = ContextCore::getContext();
+
             foreach ($psCustomer->getAddresses($context->language->id) as $psAddress) {
                 $address = new Address();
                 $address
-                    ->setFirstName($psAddress->firstname)
-                    ->setLastName($psAddress->lastname)
-                    ->setAddress1($psAddress->address1)
-                    ->setAddress2($psAddress->address2)
-                    ->setCity($psAddress->city)
-                    ->setCompanyName($psAddress->company)
-                    ->setZip($psAddress->postcode)
-                    ->setAlias($psAddress->alias);
+                    ->setFirstName($psAddress['firstname'])
+                    ->setLastName($psAddress['lastname'])
+                    ->setAddress1($psAddress['address1'])
+                    ->setAddress2($psAddress['address2'])
+                    ->setCity($psAddress['city'])
+                    ->setCompanyName($psAddress['company'])
+                    ->setZip($psAddress['postcode'])
+                    ->setAlias($psAddress['alias']);
 
-                if (!empty($psAddress->phone)) {
+                if (!empty($psAddress['phone'])) {
                     $phone = new Phone();
                     $phone
                         ->setType(Phone::PHONE_TYPE_HOME)
-                        ->setNumber($psAddress->phone)
-                        ->setCountryCode($psAddress->call_prefix);
+                        ->setNumber($psAddress['phone'])
+                        ->setCountryCode($psAddress['call_prefix']);
 
                     $customer->addPhone($phone);
 
-                    if (empty($psAddress->phone_mobile)) {
+                    if (empty($psAddress['phone_mobile'])) {
                         $address->setPhonePosition($customer->getPhoneIndex($phone));
                     }
                 }
 
-                if (!empty($psAddress->phone_mobile)) {
+                if (!empty($psAddress['phone_mobile'])) {
                     $phone = new Phone();
                     $phone
                         ->setType(Phone::PHONE_TYPE_MOBILE)
-                        ->setNumber($psAddress->phone_mobile)
-                        ->setCountryCode($psAddress->call_prefix);
+                        ->setNumber($psAddress['phone_mobile'])
+                        ->setCountryCode($psAddress['call_prefix']);
 
                     $customer->addPhone($phone);
 
-                    if (empty($psAddress->phone)) {
+                    if (empty($psAddress['phone'])) {
                         $address->setPhonePosition($customer->getPhoneIndex($phone));
                     }
                 }
@@ -80,7 +81,8 @@ class expresslysendcustomerModuleFrontController extends ModuleFrontControllerCo
                 $first = false;
             }
 
-            $response = new CustomerMigratePresenter($this->module->merchant, $customer, $email, $psCustomer->id);
+            $merchant = $this->module->app['merchant.provider']->getMerchant();
+            $response = new CustomerMigratePresenter($merchant, $customer, $email, $psCustomer->id);
 
             die(Tools::jsonEncode($response->toArray()));
         }
