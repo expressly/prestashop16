@@ -115,10 +115,12 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
         if (!empty($json['cart'])) {
             if (!empty($json['cart']['productId'])) {
-                $psCart->id = $psCart->id;
-                $psCart->updateQty(1, $json['cart']['productId'], 31, null, 'up', 0, $this->context->shop);
+                $psProduct = new ProductCore($json['cart']['productId']);
+                $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
+
+                $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0, $this->context->shop);
             }
-//
+
             if (!empty($json['cart']['couponCode'])) {
                 $psCouponId = CartRuleCore::getIdByCode($json['cart']['couponCode']);
 
