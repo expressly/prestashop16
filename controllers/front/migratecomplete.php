@@ -32,16 +32,18 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
+        // 'user_already_migrated' should be proper error message, not a plain string
+        if ($json == 'user_already_migrated') {
+            Tools::redirect('/');
+        }
+
         $email = $json['migration']['data']['email'];
         $id = CustomerCore::customerExists($email, true);
         $psCustomer = new CustomerCore();
 
         if ($id) {
             $psCustomer = new CustomerCore($id);
-        }
-
-        // 'user_already_migrated' should be proper error message, not a plain string
-        if ($json != 'user_already_migrated' && !$id) {
+        } else {
             $customer = $json['migration']['data']['customerData'];
 
             $psCustomer->firstname = $customer['firstName'];
