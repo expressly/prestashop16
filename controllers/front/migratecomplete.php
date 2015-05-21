@@ -98,27 +98,34 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
         $cartId = $psCustomer->getLastCart(false);
         $psCart = new CartCore($cartId, $this->context->language->id);
-        $psCart->id_currency = 1;
 
-        if (is_null($cartId)) {
-            $psCart->id_customer = $id;
+        if ($psCart->id == null) {
+            $psCart = new CartCore();
+            $psCart->id_language = $this->context->language->id;
+            $psCart->id_currency = (int)($this->context->cookie->id_currency);
+            $psCart->id_shop_group = (int)$this->context->shop->id_shop_group;
+            $psCart->id_shop = $this->context->shop->id;
+            $psCart->id_customer = $psCustomer->id;
+            $psCart->id_shop = $this->context->shop->id;
+            $psCart->id_address_delivery = 0;
+            $psCart->id_address_invoice = 0;
             $psCart->add();
         }
 
-        if (!empty($json['migration']['cart'])) {
-            if (!empty($json['migration']['cart']['productId'])) {
-                $psCart->updateQty(1, $json['migration']['cart']['productId']);
+
+        if (!empty($json['cart'])) {
+            if (!empty($json['cart']['productId'])) {
+                $psCart->id = $psCart->id;
+                $psCart->updateQty(1, $json['cart']['productId'], 31, null, 'up', 0, $this->context->shop);
             }
+//
+            if (!empty($json['cart']['couponCode'])) {
+                $psCouponId = CartRuleCore::getIdByCode($json['cart']['couponCode']);
 
-            if (!empty($json['migration']['cart']['couponCode'])) {
-                $psCouponId = CartRuleCore::getIdByCode($json['migration']['cart']['couponCode']);
-
-                if ((int)$psCouponId > 0) {
+                if ($psCouponId) {
                     $psCart->addCartRule($psCouponId);
                 }
             }
-
-            $psCart->add();
         }
 
         $mailUser = ConfigurationCore::get('PS_MAIL_USER');
