@@ -65,7 +65,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             // Addresses
             foreach ($customer['addresses'] as $address) {
-                $phone = !empty($customer['phones'][$address['phone']]) ?: null;
+                $phone = isset($address['phone']) ?
+                    (!empty($customer['phones'][$address['phone']]) ?: null) : null;
                 $psAddress = new AddressCore();
 
                 $psAddress->id_customer = $psCustomer->id;
@@ -96,29 +97,48 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
         }
 
-        $cartId = $psCustomer->getLastCart(false);
-        $psCart = new CartCore($cartId, $this->context->language->id);
+        // Forcefully log user in
+        $psCustomer->logged = 1;
+        $this->context->customer = $psCustomer;
 
-        if ($psCart->id == null) {
-            $psCart = new CartCore();
-            $psCart->id_language = $this->context->language->id;
-            $psCart->id_currency = (int)($this->context->cookie->id_currency);
-            $psCart->id_shop_group = (int)$this->context->shop->id_shop_group;
-            $psCart->id_shop = $this->context->shop->id;
-            $psCart->id_customer = $psCustomer->id;
-            $psCart->id_shop = $this->context->shop->id;
-            $psCart->id_address_delivery = 0;
-            $psCart->id_address_invoice = 0;
-            $psCart->add();
-        }
+        $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
+            $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
+        $this->context->cookie->id_customer = (int)($psCustomer->id);
+        $this->context->cookie->customer_lastname = $psCustomer->lastname;
+        $this->context->cookie->customer_firstname = $psCustomer->firstname;
+        $this->context->cookie->logged = 1;
+        $this->context->cookie->is_guest = $psCustomer->isGuest();
+        $this->context->cookie->passwd = $psCustomer->passwd;
+        $this->context->cookie->email = $psCustomer->email;
 
-
+        // Add items (product/coupon) to cart
         if (!empty($json['cart'])) {
+            $cartId = $psCustomer->getLastCart(false);
+            $psCart = new CartCore($cartId, $this->context->language->id);
+
+            if ($psCart->id == null) {
+                $psCart = new CartCore();
+                $psCart->id_language = $this->context->language->id;
+                $psCart->id_currency = (int)($this->context->cookie->id_currency);
+                $psCart->id_shop_group = (int)$this->context->shop->id_shop_group;
+                $psCart->id_shop = $this->context->shop->id;
+                $psCart->id_customer = $psCustomer->id;
+                $psCart->id_shop = $this->context->shop->id;
+                $psCart->id_address_delivery = 0;
+                $psCart->id_address_invoice = 0;
+                $psCart->add();
+            }
+
             if (!empty($json['cart']['productId'])) {
                 $psProduct = new ProductCore($json['cart']['productId']);
-                $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
 
-                $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0, $this->context->shop);
+                if ($psProduct->checkAccess($psCustomer->id)) {
+                    $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
+
+                    if ($psProductAttribute > 0) {
+                        $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0, $this->context->shop);
+                    }
+                }
             }
 
             if (!empty($json['cart']['couponCode'])) {
@@ -128,8 +148,11 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psCart->addCartRule($psCouponId);
                 }
             }
+
+            $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
         }
 
+        // Dispatch password creation email
         $mailUser = ConfigurationCore::get('PS_MAIL_USER');
         $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
         if (!empty($mailUser) && !empty($mailPass)) {
@@ -154,21 +177,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
         }
 
-        // Forcefully log user in
-        $psCustomer->logged = 1;
-        $this->context->customer = $psCustomer;
-
-        $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
-            $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
-        $this->context->cookie->id_customer = (int)($psCustomer->id);
-        $this->context->cookie->customer_lastname = $psCustomer->lastname;
-        $this->context->cookie->customer_firstname = $psCustomer->firstname;
-        $this->context->cookie->logged = 1;
-        $this->context->cookie->is_guest = $psCustomer->isGuest();
-        $this->context->cookie->passwd = $psCustomer->passwd;
-        $this->context->cookie->email = $psCustomer->email;
-        $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
         $this->context->cookie->write();
+
+        die;
 
         Tools::redirect('/');
 
