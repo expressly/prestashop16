@@ -73,7 +73,6 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psAddress = new AddressCore();
 
                     $psAddress->id_customer = $psCustomer->id;
-                    $psAddress->id_country = 3;
                     $psAddress->alias = $address['addressAlias'];
                     $psAddress->firstname = $address['firstName'];
                     $psAddress->lastname = $address['lastName'];
