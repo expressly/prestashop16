@@ -37,158 +37,158 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
-        $email = $json['migration']['data']['email'];
-        $id = CustomerCore::customerExists($email, true);
-        $psCustomer = new CustomerCore();
+        try {
+            $email = $json['migration']['data']['email'];
+            $id = CustomerCore::customerExists($email, true);
+            $psCustomer = new CustomerCore();
 
-        if ($id) {
-            $psCustomer = new CustomerCore($id);
-        } else {
-            $customer = $json['migration']['data']['customerData'];
+            if ($id) {
+                $psCustomer = new CustomerCore($id);
+            } else {
+                $customer = $json['migration']['data']['customerData'];
 
-            $psCustomer->firstname = $customer['firstName'];
-            $psCustomer->lastname = $customer['lastName'];
-            $psCustomer->email = $email;
-            $psCustomer->passwd = md5('xly' . microtime());
-            $psCustomer->id_gender = $customer['gender'] && $customer['gender'] == Customer::GENDER_FEMALE ? 2 : 1;
-            $psCustomer->newsletter = true;
-            $psCustomer->optin = true;
+                $psCustomer->firstname = $customer['firstName'];
+                $psCustomer->lastname = $customer['lastName'];
+                $psCustomer->email = $email;
+                $psCustomer->passwd = md5('xly' . microtime());
+                $psCustomer->id_gender = $customer['gender'] && $customer['gender'] == Customer::GENDER_FEMALE ? 2 : 1;
+                $psCustomer->newsletter = true;
+                $psCustomer->optin = true;
 
-            if (!empty($customer['dob'])) {
-                $psCustomer->birthday = date('Y-m-d', $customer['dob']);
-            }
-            if (!empty($customer['companyName'])) {
-                $psCustomer->company = $customer['companyName'];
-            }
-
-            $psCustomer->add();
-
-            // Addresses
-            foreach ($customer['addresses'] as $address) {
-                $countryCodeProvider = $this->module->app['country_code.provider'];
-                $phone = isset($address['phone']) ?
-                    (!empty($customer['phones'][$address['phone']]) ?
-                        $customer['phones'][$address['phone']] : null) : null;
-                $psAddress = new AddressCore();
-
-                $psAddress->id_customer = $psCustomer->id;
-                $psAddress->id_country = 3;
-                $psAddress->alias = $address['addressAlias'];
-                $psAddress->firstname = $address['firstName'];
-                $psAddress->lastname = $address['lastName'];
-
-                if (!empty($address['address1'])) {
-                    $psAddress->address1 = $address['address1'];
+                if (!empty($customer['dob'])) {
+                    $psCustomer->birthday = date('Y-m-d', $customer['dob']);
                 }
-                if (!empty($address['address2'])) {
-                    $psAddress->address2 = $address['address2'];
+                if (!empty($customer['companyName'])) {
+                    $psCustomer->company = $customer['companyName'];
                 }
 
-                $psAddress->postcode = $address['zip'];
-                $psAddress->city = $address['city'];
+                $psCustomer->add();
 
-                $iso2 = $countryCodeProvider->getIso2($address['country']);
-                $psAddress->id_country = CountryCore::getByIso($iso2);
+                // Addresses
+                foreach ($customer['addresses'] as $address) {
+                    $countryCodeProvider = $this->module->app['country_code.provider'];
+                    $phone = isset($address['phone']) ?
+                        (!empty($customer['phones'][$address['phone']]) ?
+                            $customer['phones'][$address['phone']] : null) : null;
+                    $psAddress = new AddressCore();
 
-                if (!is_null($phone)) {
-                    if ($phone['type'] == Phone::PHONE_TYPE_MOBILE) {
-                        $psAddress->phone_mobile = $phone['number'];
-                    } elseif ($phone['type'] == Phone::PHONE_TYPE_HOME) {
-                        $psAddress->phone = $phone['number'];
+                    $psAddress->id_customer = $psCustomer->id;
+                    $psAddress->id_country = 3;
+                    $psAddress->alias = $address['addressAlias'];
+                    $psAddress->firstname = $address['firstName'];
+                    $psAddress->lastname = $address['lastName'];
+
+                    if (!empty($address['address1'])) {
+                        $psAddress->address1 = $address['address1'];
+                    }
+                    if (!empty($address['address2'])) {
+                        $psAddress->address2 = $address['address2'];
+                    }
+
+                    $psAddress->postcode = $address['zip'];
+                    $psAddress->city = $address['city'];
+
+                    $iso2 = $countryCodeProvider->getIso2($address['country']);
+                    $psAddress->id_country = CountryCore::getByIso($iso2);
+
+                    if (!is_null($phone)) {
+                        if ($phone['type'] == Phone::PHONE_TYPE_MOBILE) {
+                            $psAddress->phone_mobile = $phone['number'];
+                        } elseif ($phone['type'] == Phone::PHONE_TYPE_HOME) {
+                            $psAddress->phone = $phone['number'];
+                        }
+                    }
+
+                    $psAddress->add();
+                }
+            }
+
+            // Forcefully log user in
+            $psCustomer->logged = 1;
+            $this->context->customer = $psCustomer;
+
+            $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
+                $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
+            $this->context->cookie->id_customer = (int)($psCustomer->id);
+            $this->context->cookie->customer_lastname = $psCustomer->lastname;
+            $this->context->cookie->customer_firstname = $psCustomer->firstname;
+            $this->context->cookie->logged = 1;
+            $this->context->cookie->is_guest = $psCustomer->isGuest();
+            $this->context->cookie->passwd = $psCustomer->passwd;
+            $this->context->cookie->email = $psCustomer->email;
+
+            // Add items (product/coupon) to cart
+            if (!empty($json['cart'])) {
+                $cartId = $psCustomer->getLastCart(false);
+                $psCart = new CartCore($cartId, $this->context->language->id);
+
+                if ($psCart->id == null) {
+                    $psCart = new CartCore();
+                    $psCart->id_language = $this->context->language->id;
+                    $psCart->id_currency = (int)($this->context->cookie->id_currency);
+                    $psCart->id_shop_group = (int)$this->context->shop->id_shop_group;
+                    $psCart->id_shop = $this->context->shop->id;
+                    $psCart->id_customer = $psCustomer->id;
+                    $psCart->id_shop = $this->context->shop->id;
+                    $psCart->id_address_delivery = 0;
+                    $psCart->id_address_invoice = 0;
+                    $psCart->add();
+                }
+
+                if (!empty($json['cart']['productId'])) {
+                    $psProduct = new ProductCore($json['cart']['productId']);
+
+                    if ($psProduct->checkAccess($psCustomer->id)) {
+                        $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
+
+                        if ($psProductAttribute > 0) {
+                            $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0,
+                                $this->context->shop);
+                        }
                     }
                 }
 
-                $psAddress->add();
-            }
-        }
+                if (!empty($json['cart']['couponCode'])) {
+                    $psCouponId = CartRuleCore::getIdByCode($json['cart']['couponCode']);
 
-        // Forcefully log user in
-        $psCustomer->logged = 1;
-        $this->context->customer = $psCustomer;
-
-        $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
-            $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
-        $this->context->cookie->id_customer = (int)($psCustomer->id);
-        $this->context->cookie->customer_lastname = $psCustomer->lastname;
-        $this->context->cookie->customer_firstname = $psCustomer->firstname;
-        $this->context->cookie->logged = 1;
-        $this->context->cookie->is_guest = $psCustomer->isGuest();
-        $this->context->cookie->passwd = $psCustomer->passwd;
-        $this->context->cookie->email = $psCustomer->email;
-
-        // Add items (product/coupon) to cart
-        if (!empty($json['cart'])) {
-            $cartId = $psCustomer->getLastCart(false);
-            $psCart = new CartCore($cartId, $this->context->language->id);
-
-            if ($psCart->id == null) {
-                $psCart = new CartCore();
-                $psCart->id_language = $this->context->language->id;
-                $psCart->id_currency = (int)($this->context->cookie->id_currency);
-                $psCart->id_shop_group = (int)$this->context->shop->id_shop_group;
-                $psCart->id_shop = $this->context->shop->id;
-                $psCart->id_customer = $psCustomer->id;
-                $psCart->id_shop = $this->context->shop->id;
-                $psCart->id_address_delivery = 0;
-                $psCart->id_address_invoice = 0;
-                $psCart->add();
-            }
-
-            if (!empty($json['cart']['productId'])) {
-                $psProduct = new ProductCore($json['cart']['productId']);
-
-                if ($psProduct->checkAccess($psCustomer->id)) {
-                    $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
-
-                    if ($psProductAttribute > 0) {
-                        $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0,
-                            $this->context->shop);
+                    if ($psCouponId) {
+                        $psCart->addCartRule($psCouponId);
                     }
                 }
+
+                $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
             }
 
-            if (!empty($json['cart']['couponCode'])) {
-                $psCouponId = CartRuleCore::getIdByCode($json['cart']['couponCode']);
+            // Dispatch password creation email
+            $mailUser = ConfigurationCore::get('PS_MAIL_USER');
+            $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
+            if (!empty($mailUser) && !empty($mailPass)) {
+                $context = ContextCore::getContext();
 
-                if ($psCouponId) {
-                    $psCart->addCartRule($psCouponId);
+                if (MailCore::Send(
+                    $context->language->id,
+                    'password_query',
+                    MailCore::l('Password query confirmation'),
+                    $mail_params = array(
+                        '{email}' => $psCustomer->email,
+                        '{lastname}' => $psCustomer->lastname,
+                        '{firstname}' => $psCustomer->firstname,
+                        '{url}' => $context->link->getPageLink('password', true, null,
+                            'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
+                    ),
+                    $psCustomer->email,
+                    sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
+                )
+                ) {
+                    $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
                 }
             }
 
-            $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
+            $this->context->cookie->write();
+        } catch (\Exception $e) {
+            // TODO: Log
         }
-
-        // Dispatch password creation email
-        $mailUser = ConfigurationCore::get('PS_MAIL_USER');
-        $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
-        if (!empty($mailUser) && !empty($mailPass)) {
-            $context = ContextCore::getContext();
-
-            if (MailCore::Send(
-                $context->language->id,
-                'password_query',
-                MailCore::l('Password query confirmation'),
-                $mail_params = array(
-                    '{email}' => $psCustomer->email,
-                    '{lastname}' => $psCustomer->lastname,
-                    '{firstname}' => $psCustomer->firstname,
-                    '{url}' => $context->link->getPageLink('password', true, null,
-                        'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
-                ),
-                $psCustomer->email,
-                sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
-            )
-            ) {
-                $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
-            }
-        }
-
-        $this->context->cookie->write();
-
-        die;
 
         Tools::redirect('/');
-
-        parent::init();
     }
 }
