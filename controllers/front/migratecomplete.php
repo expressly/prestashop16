@@ -66,7 +66,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             // Addresses
             foreach ($customer['addresses'] as $address) {
                 $phone = isset($address['phone']) ?
-                    (!empty($customer['phones'][$address['phone']]) ?: null) : null;
+                    (!empty($customer['phones'][$address['phone']]) ?
+                        $customer['phones'][$address['phone']] : null) : null;
                 $psAddress = new AddressCore();
 
                 $psAddress->id_customer = $psCustomer->id;
