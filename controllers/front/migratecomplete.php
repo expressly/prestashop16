@@ -65,6 +65,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             // Addresses
             foreach ($customer['addresses'] as $address) {
+                $countryCodeProvider = $this->module->app['country_code.provider'];
                 $phone = isset($address['phone']) ?
                     (!empty($customer['phones'][$address['phone']]) ?
                         $customer['phones'][$address['phone']] : null) : null;
@@ -85,6 +86,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
                 $psAddress->postcode = $address['zip'];
                 $psAddress->city = $address['city'];
+
+                $iso2 = $countryCodeProvider->getIso2($address['country']);
+                $psAddress->id_country = CountryCore::getByIso($iso2);
 
                 if (!is_null($phone)) {
                     if ($phone['type'] == Phone::PHONE_TYPE_MOBILE) {
@@ -137,7 +141,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psProductAttribute = $psProduct->getDefaultIdProductAttribute();
 
                     if ($psProductAttribute > 0) {
-                        $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0, $this->context->shop);
+                        $psCart->updateQty(1, $json['cart']['productId'], $psProductAttribute, null, 'up', 0,
+                            $this->context->shop);
                     }
                 }
             }

@@ -85,12 +85,20 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
                         ->setZip($psAddress['postcode'])
                         ->setAlias($psAddress['alias']);
 
+                    $psCountry = new CountryCore($psAddress['id_country']);
+                    $address->setCountry($psCountry->iso_code);
+
+                    /*
+                     * PrestaShop uses the country prefix from the address, which is logically incorrect.
+                     * An address may be in the UK, but the owner may have a DE number, this cannot be handled at current time.
+                     * TODO: Find a way that actually works, will require an expressly table to relate customers, phones, and prefix
+                     */
                     if (!empty($psAddress['phone'])) {
                         $phone = new Phone();
                         $phone
                             ->setType(Phone::PHONE_TYPE_HOME)
-                            ->setNumber($psAddress['phone']);
-//                        ->setCountryCode($psAddress['call_prefix']);
+                            ->setNumber((string)$psAddress['phone'])
+                            ->setCountryCode((int)$psCountry->call_prefix);
 
                         $customer->addPhone($phone);
 
@@ -103,8 +111,8 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
                         $phone = new Phone();
                         $phone
                             ->setType(Phone::PHONE_TYPE_MOBILE)
-                            ->setNumber($psAddress['phone_mobile']);
-//                        ->setCountryCode($psAddress['call_prefix']);
+                            ->setNumber((string)$psAddress['phone_mobile'])
+                            ->setCountryCode((int)$psCountry->call_prefix);
 
                         $customer->addPhone($phone);
 
