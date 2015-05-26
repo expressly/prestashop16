@@ -31,6 +31,20 @@ class Expressly extends ModuleCore
         $this->setup();
     }
 
+    private function setup()
+    {
+        $expressly = new Expressly\Client();
+        $app = $expressly->getApp();
+
+        // override MerchantProvider
+        $app['merchant.provider'] = $app->share(function ($app) {
+            return new Module\Expressly\MerchantProvider();
+        });
+
+        $this->app = $app;
+        $this->dispatcher = $this->app['dispatcher'];
+    }
+
     public function install()
     {
         if (!parent::install()) {
@@ -41,7 +55,8 @@ class Expressly extends ModuleCore
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', Expressly\Entity\Merchant::createPassword());
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH', '?controller=dispatcher&fc=module&module=expressly&xly=');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
+            '?controller=dispatcher&fc=module&module=expressly&xly=');
 
         $merchant = $this->app['merchant.provider']->getMerchant();
         $this->dispatcher->dispatch('merchant.register', new Expressly\Event\MerchantEvent($merchant));
@@ -51,22 +66,26 @@ class Expressly extends ModuleCore
 
     public function getContent()
     {
-        if (Tools::isSubmit('submitExpresslyPreferences')) {
-            ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION',
-                Tools::getValue('EXPRESSLY_PREFERENCES_DESTINATION'));
-            ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER',
-                Tools::getValue('EXPRESSLY_PREFERENCES_OFFER'));
+        try {
+            if (Tools::isSubmit('submitExpresslyPreferences')) {
+                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION',
+                    Tools::getValue('EXPRESSLY_PREFERENCES_DESTINATION'));
+                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER',
+                    Tools::getValue('EXPRESSLY_PREFERENCES_OFFER'));
 
-            if (ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD') != Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD')) {
-                $oldPassword = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD'));
+                if (ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD') != Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD')) {
+                    $oldPassword = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
+                    ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD',
+                        Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD'));
 
-                // Send update
-                $merchant = $this->app['merchant.provider']->getMerchant(true);
-                $event = new Expressly\Event\MerchantNewPasswordEvent($merchant, $oldPassword);
-                $this->dispatcher->dispatch('merchant.password.update', $event);
+                    // Send password update
+                    $merchant = $this->app['merchant.provider']->getMerchant(true);
+                    $event = new Expressly\Event\MerchantNewPasswordEvent($merchant, $oldPassword);
+                    $this->dispatcher->dispatch('merchant.password.update', $event);
+                }
             }
+        } catch (\Exception $e) {
+            // TODO: Log
         }
 
         return $this->displayForm();
@@ -155,19 +174,5 @@ class Expressly extends ModuleCore
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PATH');
 
         return true;
-    }
-
-    private function setup()
-    {
-        $expressly = new Expressly\Client();
-        $app = $expressly->getApp();
-
-        // override MerchantProvider
-        $app['merchant.provider'] = $app->share(function ($app) {
-            return new Module\Expressly\MerchantProvider();
-        });
-
-        $this->app = $app;
-        $this->dispatcher = $this->app['dispatcher'];
     }
 }
