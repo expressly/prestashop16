@@ -36,9 +36,9 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 
     private function ping()
     {
-        $dispatcher = $this->module->dispatcher;
-        $response = $dispatcher->dispatch('utility.ping', new ResponseEvent())->getResponse();
-        die(Tools::jsonEncode($response));
+        $response = new ResponseEvent();
+        $this->module->dispatcher->dispatch('utility.ping', $response);
+        die(Tools::jsonEncode($response->getResponse()));
     }
 
     private function retrieveUserByEmail($emailAddr)

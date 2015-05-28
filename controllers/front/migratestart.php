@@ -12,10 +12,14 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
         $this->display_column_left = true;
         $this->display_column_right = true;
 
-        $merchant = $this->module->app['merchant.provider']->getMerchant();
-        $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
-        $this->module->dispatcher->dispatch('customer.migrate.start', $event);
-        $this->response = $event->getResponse();
+        try {
+            $merchant = $this->module->app['merchant.provider']->getMerchant();
+            $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
+            $this->module->dispatcher->dispatch('customer.migrate.start', $event);
+            $this->response = $event->getResponse();
+        } catch (\Exception $e) {
+            // TODO: Log
+        }
 
         parent::init();
     }
