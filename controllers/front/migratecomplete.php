@@ -186,6 +186,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $this->context->cookie->write();
         } catch (\Exception $e) {
             // TODO: Log
+            var_dump((string)$e);die;
         }
 
         Tools::redirect('/');
