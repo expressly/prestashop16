@@ -184,9 +184,10 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
 
             $this->context->cookie->write();
+
+            $this->module->dispatcher->dispatch('customer.migrate.success', $event);
         } catch (\Exception $e) {
             // TODO: Log
-            var_dump((string)$e);die;
         }
 
         Tools::redirect('/');

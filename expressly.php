@@ -1,5 +1,7 @@
 <?php
 
+use Expressly\Event\MerchantEvent;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -66,7 +68,9 @@ class Expressly extends ModuleCore
             '?controller=dispatcher&fc=module&module=expressly&xly=');
 
         $merchant = $this->app['merchant.provider']->getMerchant();
-        $this->dispatcher->dispatch('merchant.register', new Expressly\Event\MerchantEvent($merchant));
+        $event = new MerchantEvent($merchant);
+        $this->dispatcher->dispatch('merchant.register', $event);
+        $this->dispatcher->dispatch('merchant.password.save', $event);
 
         return true;
     }
