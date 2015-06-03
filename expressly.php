@@ -67,7 +67,7 @@ class Expressly extends ModuleCore
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
             '?controller=dispatcher&fc=module&module=expressly&xly=');
 
-        $merchant = $this->app['merchant.provider']->getMerchant();
+        $merchant = $this->app['merchant.provider']->getMerchant(true);
         $event = new MerchantEvent($merchant);
         $this->dispatcher->dispatch('merchant.register', $event);
         $this->dispatcher->dispatch('merchant.password.save', $event);
