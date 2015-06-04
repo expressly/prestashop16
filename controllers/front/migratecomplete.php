@@ -26,7 +26,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
-        if (empty($json['migration'])) {
+        if (empty($json)) {
             // record error
 
             Tools::redirect('/');
@@ -38,14 +38,14 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
         }
 
         try {
-            $email = $json['migration']['data']['email'];
+            $email = $json['data']['email'];
             $id = CustomerCore::customerExists($email, true);
             $psCustomer = new CustomerCore();
 
             if ($id) {
                 $psCustomer = new CustomerCore($id);
             } else {
-                $customer = $json['migration']['data']['customerData'];
+                $customer = $json['data']['customerData'];
 
                 $psCustomer->firstname = $customer['firstName'];
                 $psCustomer->lastname = $customer['lastName'];
