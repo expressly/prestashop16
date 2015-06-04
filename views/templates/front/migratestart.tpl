@@ -1,12 +1,15 @@
 {literal}
     <script type="text/javascript">
-        //    var trigger = document.getElementsByClassName('expressly_button')[0].getElementsByTagName('a')[0];
-        //    trigger.addEventListener('click', popupContinue);
         (function () {
-            window.popupContinue = function () {
+            popupContinue = function (event) {
+                event.style.display = 'none';
+                var loader = event.nextElementSibling;
+                loader.style.display = 'block';
+                loader.nextElementSibling.style.display = 'none';
+
                 var host = window.location.origin,
-                    parameters = window.location.search,
-                    uuid;
+                        parameters = window.location.search,
+                        uuid;
 
                 parameters = parameters.split('&');
 
@@ -16,7 +19,19 @@
                     }
                 }
 
-                window.location.replace(host + '?controller=migratecomplete&fc=module&module=expressly&uuid=' + uuid);
+                window.location.replace(host + '?controller=migratecomplete&fc=module&module=expressly&uuid=' + uuid);' + uuid);
+            };
+
+            popupClose = function (event) {
+                window.location.replace(window.location.origin);
+            };
+
+            openTerms = function (event) {
+                window.open(event.href, '_blank');
+            };
+
+            openPrivacy = function (event) {
+                window.open(event.href, '_blank');
             };
         })();
     </script>
