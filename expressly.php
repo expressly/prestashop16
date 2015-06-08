@@ -68,10 +68,10 @@ class Expressly extends ModuleCore
             $this->dispatcher->dispatch('merchant.register', $event);
 
             $content = $event->getContent();
-//            if (!$event->getResponse()->isSuccessful()) {
-//                $this->error = true;
-//                throw new \Exception(self::processError($event));
-//            }
+            if (!$event->getResponse()->isSuccessful()) {
+                $this->error = true;
+                throw new \Exception(self::processError($event));
+            }
 
             $merchant
                 ->setUuid($content['uuid'])
@@ -84,7 +84,7 @@ class Expressly extends ModuleCore
             }
         } catch (Buzz\Exception\RequestException $e) {
             $this->app['logger']->addError((string)$e);
-            $this->_errors[] = $e->getMessage() . '. Please contact expressly.';
+            $this->_errors[] =  'We had trouble talking to the server. Please contact expressly.';
 
             return false;
         } catch (\Exception $e) {
