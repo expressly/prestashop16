@@ -20,7 +20,8 @@ class MerchantProvider implements MerchantProviderInterface
     {
         $merchant = new Merchant();
         $merchant
-            ->setName(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_NAME'))
+            ->setName(\ConfigurationCore::get('PS_SHOP_NAME'))
+            ->setUuid(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_UUID'))
             ->setImage(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_IMAGE'))
             ->setTerms(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_TERMS'))
             ->setPolicy(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_POLICY'))
@@ -45,6 +46,16 @@ class MerchantProvider implements MerchantProviderInterface
     public function setMerchant(Merchant $merchant)
     {
         $this->merchant = $merchant;
+
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', $merchant->getUuid());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE', $merchant->getImage());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $merchant->getTerms());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $merchant->getPolicy());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', $merchant->getDestination());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $merchant->getHost());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', $merchant->getOffer());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', $merchant->getPassword());
+        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH', $merchant->getPath());
 
         return $this;
     }

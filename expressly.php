@@ -12,7 +12,7 @@ class Expressly extends ModuleCore
     public function __construct()
     {
         $this->name = "expressly";
-        $this->tab = "smart_shopping";
+        $this->tab = "advertising";
         $this->version = "1.0.0";
         $this->author = "Expressly";
         $this->need_instance = 1;
@@ -33,11 +33,11 @@ class Expressly extends ModuleCore
 
     private function setup()
     {
-        $expressly = new Expressly\Client();
+        $expressly = new Expressly\Client(Expressly\Entity\MerchantType::PRESTASHOP);
         $app = $expressly->getApp();
 
         // override MerchantProvider
-        $app['merchant.provider'] = $app->share(function ($app) {
+        $app['merchant.provider'] = $app->share(function () {
             return new Module\Expressly\MerchantProvider();
         });
 
@@ -45,15 +45,11 @@ class Expressly extends ModuleCore
         $this->dispatcher = $this->app['dispatcher'];
     }
 
-    public function install()
+    public function install($register = false)
     {
-        if (!parent::install()) {
-            return false;
-        }
+        $url = sprintf('http://%s', $_SERVER['HTTP_HOST']);
 
-        $url = sprintf('https://%s', $_SERVER['HTTP_HOST']);
-
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_NAME', ConfigurationCore::get('PS_SHOP_NAME'));
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', '');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
             sprintf('%s/img/%s', $url, ConfigurationCore::get('PS_LOGO')));
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . '/content/3-terms-and-conditions-of-use');
@@ -61,24 +57,88 @@ class Expressly extends ModuleCore
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $url);
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', Expressly\Entity\Merchant::createPassword());
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', '');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
             '?controller=dispatcher&fc=module&module=expressly&xly=');
 
-        $merchant = $this->app['merchant.provider']->getMerchant(true);
-        $event = new Expressly\Event\MerchantEvent($merchant);
-        $this->dispatcher->dispatch('merchant.register', $event);
-        $this->dispatcher->dispatch('merchant.password.save', $event);
+        try {
+            $provider = $this->app['merchant.provider'];
+            $merchant = $provider->getMerchant(true);
+            $event = new Expressly\Event\MerchantEvent($merchant);
+            $this->dispatcher->dispatch('merchant.register', $event);
+
+            $content = $event->getContent();
+//            if (!$event->getResponse()->isSuccessful()) {
+//                $this->error = true;
+//                throw new \Exception(self::processError($event));
+//            }
+
+            $merchant
+                ->setUuid($content['uuid'])
+                ->setPassword($content['secretKey']);
+
+            $provider->setMerchant($merchant);
+
+            if (!parent::install()) {
+                return false;
+            }
+        } catch (Buzz\Exception\RequestException $e) {
+            $this->app['logger']->addError((string)$e);
+            $this->_errors[] = $e->getMessage() . '. Please contact expressly.';
+
+            return false;
+        } catch (\Exception $e) {
+            $this->app['logger']->addError((string)$e);
+            $this->_errors[] = (string)$e->getMessage();
+
+            return false;
+        }
 
         return true;
     }
 
+    public static function processError(Symfony\Component\EventDispatcher\Event $event)
+    {
+        $content = $event->getContent();
+        $message[] = $content['message'];
+
+        $addBulletpoints = function ($key) use ($content, $message) {
+            if (!empty($content[$key])) {
+                $message[] = '<ul>';
+
+                foreach ($content[$key] as $point) {
+                    $message[] = "<li>{$point}</li>";
+                }
+
+                $message[] = '</ul>';
+            }
+        };
+
+        $addBulletpoints('actions');
+        $addBulletpoints('causes');
+
+        $output = '
+	 	<div class="bootstrap">
+		<div class="module_error alert alert-danger" >
+			<button type="button" class="close" data-dismiss="alert">&times;</button>
+			'.implode('', $message).'
+		</div>
+		</div>';
+        return $output;
+
+        return implode('', $message);
+    }
+
     public function getContent()
     {
+        /*
+         * This is a terrible method to display errors
+         * TODO: Evaluate an override that makes sense
+         */
+        $error = '';
+
         try {
             if (Tools::isSubmit('submitExpresslyPreferences')) {
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_NAME',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_NAME'));
                 ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
                     Tools::getValue('EXPRESSLY_PREFERENCES_IMAGE'));
                 ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS',
@@ -102,17 +162,29 @@ class Expressly extends ModuleCore
                 }
 
                 $merchant = $this->app['merchant.provider']->getMerchant(true);
-                $this->dispatcher->dispatch('merchant.update', new Expressly\Event\MerchantEvent($merchant));
+                $event = new Expressly\Event\MerchantEvent($merchant);
+                $this->dispatcher->dispatch('merchant.update', $event);
+
+                if (!$event->isSuccessful()) {
+                    $error = self::processError($event);
+                }
             }
         } catch (\Exception $e) {
-            // TODO: Log
+            $this->app['logger']->addError((string)$e);
+            $error = $this->displayError((string)$e);
         }
 
-        return $this->displayForm();
+        return $error . $this->displayForm();
     }
 
     public function displayForm()
     {
+        $uuid = ConfigurationCore::get('EXPRESSLY_PREFERENCES_UUID');
+        $image = ConfigurationCore::get('EXPRESSLY_PREFERENCES_IMAGE');
+        $terms = ConfigurationCore::get('EXPRESSLY_PREFERENCES_TERMS');
+        $policy = ConfigurationCore::get('EXPRESSLY_PREFERENCES_POLICY');
+        $password = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
+
         $fields = array(
             'form' => array(
                 'legend' => array(
@@ -122,59 +194,53 @@ class Expressly extends ModuleCore
                 'input' => array(
                     array(
                         'type' => 'text',
-                        'label' => 'Shop name',
-                        'desc' => 'Shop name displayed to Expressly',
-                        'name' => 'EXPRESSLY_PREFERENCES_NAME',
-                        'required' => true
-                    ),
-                    array(
-                        'type' => 'text',
                         'label' => 'Shop Image URL',
-                        'desc' => 'Full URL to your shops\' logo',
+                        'desc' => sprintf('<img src="%s" />', $image),
                         'name' => 'EXPRESSLY_PREFERENCES_IMAGE',
                         'required' => true
                     ),
                     array(
                         'type' => 'text',
                         'label' => 'Terms and Conditions URL',
-                        'desc' => 'Full URL to your shops\' terms and conditions',
+                        'desc' => sprintf('URL for the Terms & Conditions for your store. <a href="%s">Check</a>',
+                            $terms),
                         'name' => 'EXPRESSLY_PREFERENCES_TERMS',
                         'required' => true
                     ),
                     array(
                         'type' => 'text',
                         'label' => 'Privacy Policy URL',
-                        'desc' => 'Full URL to your shops\' privacy policy',
+                        'desc' => sprintf('URL for the Privacy Policy for your store. <a href="%s">Check</a>', $policy),
                         'name' => 'EXPRESSLY_PREFERENCES_POLICY',
                         'required' => true
                     ),
-                    array(
-                        'type' => 'text',
-                        'label' => 'Destination',
-                        'desc' => 'Redirect destination after checkout',
-                        'name' => 'EXPRESSLY_PREFERENCES_DESTINATION',
-                        'required' => true
-                    ),
-                    array(
-                        'type' => 'switch',
-                        'label' => 'Show offers',
-                        'desc' => 'Show offers after checkout',
-                        'name' => 'EXPRESSLY_PREFERENCES_OFFER',
-                        'is_bool' => true,
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => 'Enabled'
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => 'Disabled'
-                            )
-                        ),
-                        'required' => true
-                    ),
+//                    array(
+//                        'type' => 'text',
+//                        'label' => 'Destination',
+//                        'desc' => 'Redirect destination after checkout',
+//                        'name' => 'EXPRESSLY_PREFERENCES_DESTINATION',
+//                        'required' => true
+//                    ),
+//                    array(
+//                        'type' => 'switch',
+//                        'label' => 'Show offers',
+//                        'desc' => 'Show offers after checkout',
+//                        'name' => 'EXPRESSLY_PREFERENCES_OFFER',
+//                        'is_bool' => true,
+//                        'values' => array(
+//                            array(
+//                                'id' => 'active_on',
+//                                'value' => true,
+//                                'label' => 'Enabled'
+//                            ),
+//                            array(
+//                                'id' => 'active_off',
+//                                'value' => false,
+//                                'label' => 'Disabled'
+//                            )
+//                        ),
+//                        'required' => true
+//                    ),
                     array(
                         'type' => 'text',
                         'label' => 'Password',
@@ -189,6 +255,19 @@ class Expressly extends ModuleCore
             )
         );
 
+        if (empty($uuid) && empty($password)) {
+            $register = ToolsCore::getValue('register');
+            if (!empty($register)) {
+                $this->install(true);
+            }
+
+            $fields['form']['buttons'][] = array(
+                'href' => '#',
+                'title' => 'Register',
+                'icon' => 'process-icon-envelope'
+            );
+        }
+
         $form = new HelperFormCore();
         $form->module = $this;
         $form->show_toolbar = false;
@@ -197,13 +276,12 @@ class Expressly extends ModuleCore
         $form->submit_action = 'submitExpresslyPreferences';
         $form->token = Tools::getAdminTokenLite('AdminModules');
 
-        $form->fields_value['EXPRESSLY_PREFERENCES_NAME'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_NAME');
-        $form->fields_value['EXPRESSLY_PREFERENCES_IMAGE'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_IMAGE');
-        $form->fields_value['EXPRESSLY_PREFERENCES_TERMS'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_TERMS');
-        $form->fields_value['EXPRESSLY_PREFERENCES_POLICY'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_POLICY');
-        $form->fields_value['EXPRESSLY_PREFERENCES_DESTINATION'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION');
-        $form->fields_value['EXPRESSLY_PREFERENCES_OFFER'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER');
-        $form->fields_value['EXPRESSLY_PREFERENCES_PASSWORD'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
+        $form->fields_value['EXPRESSLY_PREFERENCES_IMAGE'] = $image;
+        $form->fields_value['EXPRESSLY_PREFERENCES_TERMS'] = $terms;
+        $form->fields_value['EXPRESSLY_PREFERENCES_POLICY'] = $policy;
+//        $form->fields_value['EXPRESSLY_PREFERENCES_DESTINATION'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION');
+//        $form->fields_value['EXPRESSLY_PREFERENCES_OFFER'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER');
+        $form->fields_value['EXPRESSLY_PREFERENCES_PASSWORD'] = $password;
 
         $language = new LanguageCore((int)ConfigurationCore::get('PS_LANG_DEFAULT'));
         $form->default_form_language = $language->id;
@@ -218,15 +296,14 @@ class Expressly extends ModuleCore
         }
 
         $merchant = $this->app['merchant.provider']->getMerchant();
-        $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\MerchantEvent($merchant));
+        $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\PasswordedEvent($merchant));
 
-        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_NAME');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_IMAGE');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_TERMS');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_POLICY');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_HOST');
-        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_DESTINATION');
-        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_OFFER');
+//        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_DESTINATION');
+//        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_OFFER');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PASSWORD');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PATH');
 

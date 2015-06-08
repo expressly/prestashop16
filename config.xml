@@ -5,7 +5,7 @@
 	<version><![CDATA[1.0.0]]></version>
 	<description><![CDATA[Description.]]></description>
 	<author><![CDATA[Expressly]]></author>
-	<tab><![CDATA[smart_shopping]]></tab>
+	<tab><![CDATA[advertising]]></tab>
 	<confirmUninstall><![CDATA[Are you sure you want to uninstall?]]></confirmUninstall>
 	<is_configurable>1</is_configurable>
 	<need_instance>1</need_instance>
