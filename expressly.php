@@ -195,7 +195,7 @@ class Expressly extends ModuleCore
                     array(
                         'type' => 'text',
                         'label' => 'Shop Image URL',
-                        'desc' => sprintf('<img src="%s" />', $image),
+                        'desc' => sprintf('<img src="%s" width="100px" height="100px" style="border: 1px solid black;"/>', $image),
                         'name' => 'EXPRESSLY_PREFERENCES_IMAGE',
                         'required' => true
                     ),
