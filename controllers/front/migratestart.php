@@ -16,7 +16,7 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
         $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
 
         try {
-            $this->module->dispatcher->dispatch('customer.migrate.start', $event);
+            $this->module->dispatcher->dispatch('customer.migrate.popup', $event);
 
             if (!$event->isSuccessful()) {
                 throw new \Exception(Expressly::processError($event));
@@ -37,7 +37,7 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
         parent::initContent();
 
         $this->context->smarty->assign(array(
-            'xly_popup' => $this->response
+            'xly_popup' => $this->response->getContent()
         ));
         $this->setTemplate('migratestart.tpl');
     }

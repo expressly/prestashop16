@@ -13,39 +13,40 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
-        // get json
-        $merchant = $this->module->app['merchant.provider']->getMerchant();
-        $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
-        $this->module->dispatcher->dispatch('customer.migrate.complete', $event);
-
-        $json = $event->getResponse();
-
-        if (!empty($json['code'])) {
-            // record error
-
-            Tools::redirect('/');
-        }
-
-        if (empty($json)) {
-            // record error
-
-            Tools::redirect('/');
-        }
-
-        // 'user_already_migrated' should be proper error message, not a plain string
-        if ($json == 'user_already_migrated') {
-            Tools::redirect('/');
-        }
-
         try {
-            $email = $json['data']['email'];
+            $merchant = $this->module->app['merchant.provider']->getMerchant();
+            $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
+            $this->module->dispatcher->dispatch('customer.migrate.data', $event);
+
+            $json = $event->getContent();
+
+            if (!empty($json['code'])) {
+                // record error
+
+                Tools::redirect('/');
+            }
+
+            if (empty($json)) {
+                // record error
+
+                Tools::redirect('/');
+            }
+
+            // 'user_already_migrated' should be proper error message, not a plain string
+            if ($json == 'user_already_migrated') {
+                Tools::redirect('/');
+            }
+
+            $email = $json['migration']['data']['email'];
             $id = CustomerCore::customerExists($email, true);
             $psCustomer = new CustomerCore();
 
             if ($id) {
                 $psCustomer = new CustomerCore($id);
+
+                $event = new CustomerMigrateEvent($merchant, $_GET['uuid'], CustomerMigrateEvent::EXISTING_CUSTOMER);
             } else {
-                $customer = $json['data']['customerData'];
+                $customer = $json['migration']['data']['customerData'];
 
                 $psCustomer->firstname = $customer['firstName'];
                 $psCustomer->lastname = $customer['lastName'];
@@ -187,7 +188,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             $this->module->dispatcher->dispatch('customer.migrate.success', $event);
         } catch (\Exception $e) {
-            // TODO: Log
+            $this->module->app['logger']->addError((string)$e);
         }
 
         Tools::redirect('/');

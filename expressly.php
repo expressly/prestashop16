@@ -12,8 +12,8 @@ class Expressly extends ModuleCore
     public function __construct()
     {
         $this->name = "expressly";
-        $this->tab = "advertising";
-        $this->version = "1.0.0";
+        $this->tab = "advertising_marketing";
+        $this->version = "1.0.1";
         $this->author = "Expressly";
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array(
@@ -45,65 +45,74 @@ class Expressly extends ModuleCore
         $this->dispatcher = $this->app['dispatcher'];
     }
 
-    public function install($register = false)
+    public function getContent()
     {
-        $url = sprintf('http://%s', $_SERVER['HTTP_HOST']);
-
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', '');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
-            sprintf('%s/img/%s', $url, ConfigurationCore::get('PS_LOGO')));
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . '/content/3-terms-and-conditions-of-use');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $url . '/content/3-terms-and-conditions-of-use');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $url);
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', '');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
-            '?controller=dispatcher&fc=module&module=expressly&xly=');
+        $errors = array();
 
         try {
-            $provider = $this->app['merchant.provider'];
-            $merchant = $provider->getMerchant(true);
-            $event = new Expressly\Event\MerchantEvent($merchant);
-            $this->dispatcher->dispatch('merchant.register', $event);
+            if (Tools::isSubmit('submitExpresslyPreferences')) {
+                $register = Tools::getValue('REGISTER');
+                $provider = $this->app['merchant.provider'];
+                $merchant = $provider->getMerchant();
 
-            $content = $event->getContent();
-            if (!$event->getResponse()->isSuccessful()) {
-                $this->error = true;
-                throw new \Exception(self::processError($event));
-            }
+                $merchant
+                    ->setImage(Tools::getValue('EXPRESSLY_PREFERENCES_IMAGE'))
+                    ->setTerms(Tools::getValue('EXPRESSLY_PREFERENCES_TERMS'))
+                    ->setPolicy(Tools::getValue('EXPRESSLY_PREFERENCES_POLICY'));
+//                    ->setDestination(Tools::getValue('EXPRESSLY_PREFERENCES_DESTINATION'))
+//                    ->setOffer(Tools::getValue('EXPRESSLY_PREFERENCES_OFFER'));
 
-            $merchant
-                ->setUuid($content['uuid'])
-                ->setPassword($content['secretKey']);
+                $event = new Expressly\Event\PasswordedEvent($merchant);
 
-            $provider->setMerchant($merchant);
+                if (!empty($register)) {
+                    $event = new Expressly\Event\MerchantEvent($merchant);
+                    $this->dispatcher->dispatch('merchant.register', $event);
+                } else {
+                    $this->dispatcher->dispatch('merchant.update', $event);
+                }
 
-            if (!parent::install()) {
-                return false;
+                if (!$event->isSuccessful()) {
+                    throw new \Exception(self::processError($event));
+                }
+
+                if (!empty($register)) {
+                    $content = $event->getContent();
+
+                    $merchant
+                        ->setUuid($content['merchantUuid'])
+                        ->setPassword($content['secretKey']);
+
+                }
+
+                $provider->setMerchant($merchant);
             }
         } catch (Buzz\Exception\RequestException $e) {
             $this->app['logger']->addError((string)$e);
-            $this->_errors[] =  'We had trouble talking to the server. Please contact expressly.';
-
-            return false;
+            $errors[] = $this->displayError('We had trouble talking to the server. The server could be down; please contact expressly.');
         } catch (\Exception $e) {
             $this->app['logger']->addError((string)$e);
-            $this->_errors[] = (string)$e->getMessage();
-
-            return false;
+            $errors[] = $this->displayError((string)$e->getMessage());
         }
 
-        return true;
+        /*
+         * This is a terrible method to display errors
+         * TODO: Evaluate an override that makes sense
+         */
+
+        return implode('', $errors) . $this->displayForm();
     }
 
     public static function processError(Symfony\Component\EventDispatcher\Event $event)
     {
         $content = $event->getContent();
-        $message[] = $content['message'];
+        $message = array(
+            $content['description']
+        );
 
-        $addBulletpoints = function ($key) use ($content, $message) {
+        $addBulletpoints = function ($key, $title) use ($content, &$message) {
             if (!empty($content[$key])) {
+                $message[] = '<br>';
+                $message[] = $title;
                 $message[] = '<ul>';
 
                 foreach ($content[$key] as $point) {
@@ -114,67 +123,11 @@ class Expressly extends ModuleCore
             }
         };
 
-        $addBulletpoints('actions');
-        $addBulletpoints('causes');
-
-        $output = '
-	 	<div class="bootstrap">
-		<div class="module_error alert alert-danger" >
-			<button type="button" class="close" data-dismiss="alert">&times;</button>
-			'.implode('', $message).'
-		</div>
-		</div>';
-        return $output;
+        // TODO: translatable
+        $addBulletpoints('causes', 'Possible causes:');
+        $addBulletpoints('actions', 'Possible resolutions:');
 
         return implode('', $message);
-    }
-
-    public function getContent()
-    {
-        /*
-         * This is a terrible method to display errors
-         * TODO: Evaluate an override that makes sense
-         */
-        $error = '';
-
-        try {
-            if (Tools::isSubmit('submitExpresslyPreferences')) {
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_IMAGE'));
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_TERMS'));
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_POLICY'));
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_DESTINATION'));
-                ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER',
-                    Tools::getValue('EXPRESSLY_PREFERENCES_OFFER'));
-
-                if (ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD') != Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD')) {
-                    $oldPassword = ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD');
-                    ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD',
-                        Tools::getValue('EXPRESSLY_PREFERENCES_PASSWORD'));
-
-                    // Send password update
-                    $merchant = $this->app['merchant.provider']->getMerchant(true);
-                    $event = new Expressly\Event\MerchantUpdatePasswordEvent($merchant, $oldPassword);
-                    $this->dispatcher->dispatch('merchant.password.update', $event);
-                }
-
-                $merchant = $this->app['merchant.provider']->getMerchant(true);
-                $event = new Expressly\Event\MerchantEvent($merchant);
-                $this->dispatcher->dispatch('merchant.update', $event);
-
-                if (!$event->isSuccessful()) {
-                    $error = self::processError($event);
-                }
-            }
-        } catch (\Exception $e) {
-            $this->app['logger']->addError((string)$e);
-            $error = $this->displayError((string)$e);
-        }
-
-        return $error . $this->displayForm();
     }
 
     public function displayForm()
@@ -195,15 +148,20 @@ class Expressly extends ModuleCore
                     array(
                         'type' => 'text',
                         'label' => 'Shop Image URL',
-                        'desc' => sprintf('<img src="%s" width="100px" height="100px" style="border: 1px solid black;"/>', $image),
+                        'desc' => sprintf(
+                            '<img src="%s" width="100px" height="100px" style="border: 1px solid black;"/>',
+                            $image
+                        ),
                         'name' => 'EXPRESSLY_PREFERENCES_IMAGE',
                         'required' => true
                     ),
                     array(
                         'type' => 'text',
                         'label' => 'Terms and Conditions URL',
-                        'desc' => sprintf('URL for the Terms & Conditions for your store. <a href="%s">Check</a>',
-                            $terms),
+                        'desc' => sprintf(
+                            'URL for the Terms & Conditions for your store. <a href="%s">Check</a>',
+                            $terms
+                        ),
                         'name' => 'EXPRESSLY_PREFERENCES_TERMS',
                         'required' => true
                     ),
@@ -246,27 +204,18 @@ class Expressly extends ModuleCore
                         'label' => 'Password',
                         'desc' => 'Expressly password for your store',
                         'name' => 'EXPRESSLY_PREFERENCES_PASSWORD',
-                        'required' => true
+                        'disabled' => true
+                    ),
+                    array(
+                        'type' => 'hidden',
+                        'name' => 'REGISTER'
                     )
                 ),
                 'submit' => array(
-                    'title' => 'Save'
+                    'title' => (empty($uuid) && empty($password)) ? 'Register' : 'Save'
                 )
             )
         );
-
-        if (empty($uuid) && empty($password)) {
-            $register = ToolsCore::getValue('register');
-            if (!empty($register)) {
-                $this->install(true);
-            }
-
-            $fields['form']['buttons'][] = array(
-                'href' => '#',
-                'title' => 'Register',
-                'icon' => 'process-icon-envelope'
-            );
-        }
 
         $form = new HelperFormCore();
         $form->module = $this;
@@ -282,11 +231,35 @@ class Expressly extends ModuleCore
 //        $form->fields_value['EXPRESSLY_PREFERENCES_DESTINATION'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION');
 //        $form->fields_value['EXPRESSLY_PREFERENCES_OFFER'] = ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER');
         $form->fields_value['EXPRESSLY_PREFERENCES_PASSWORD'] = $password;
+        $form->fields_value['REGISTER'] = (empty($uuid) && empty($password)) ? true : false;
 
         $language = new LanguageCore((int)ConfigurationCore::get('PS_LANG_DEFAULT'));
         $form->default_form_language = $language->id;
 
         return $form->generateForm(array($fields));
+    }
+
+    public function install($register = false)
+    {
+        if (!$register && !parent::install()) {
+            return false;
+        }
+
+        $url = sprintf('http://%s', $_SERVER['HTTP_HOST']);
+
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', '');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
+            sprintf('%s/img/%s', $url, ConfigurationCore::get('PS_LOGO')));
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . '/content/3-terms-and-conditions-of-use');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $url . '/content/3-terms-and-conditions-of-use');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $url);
+//        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
+//        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', '');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
+            '?controller=dispatcher&fc=module&module=expressly&xly=');
+
+        return true;
     }
 
     public function uninstall()

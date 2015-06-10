@@ -4,8 +4,8 @@ use Expressly\Entity\Address;
 use Expressly\Entity\Customer;
 use Expressly\Entity\Email;
 use Expressly\Entity\Phone;
-use Expressly\Event\ResponseEvent;
 use Expressly\Presenter\CustomerMigratePresenter;
+use Expressly\Presenter\PingPresenter;
 
 class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 {
@@ -36,9 +36,8 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 
     private function ping()
     {
-        $response = new ResponseEvent();
-        $this->module->dispatcher->dispatch('utility.ping', $response);
-        die(Tools::jsonEncode($response->getResponse()));
+        $presenter = new PingPresenter();
+        die(Tools::jsonEncode($presenter->toArray()));
     }
 
     private function retrieveUserByEmail($emailAddr)

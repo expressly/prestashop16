@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "50d143ab6f2c2d4f4ead497c72e6d56c",
+    "hash": "cbb3603cba75c9ae03fae70379a8e542",
     "packages": [
         {
             "name": "deralex/yaml-config-service-provider",
@@ -125,16 +125,16 @@
         },
         {
             "name": "expressly/php-common",
-            "version": "1.0.0",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/expressly/php-common.git",
-                "reference": "c03a67fd996d85798361ea545b597c11601a6993"
+                "reference": "1507bee53ed1c77fa94dc9b58853642fb116b544"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/expressly/php-common/zipball/c03a67fd996d85798361ea545b597c11601a6993",
-                "reference": "c03a67fd996d85798361ea545b597c11601a6993",
+                "url": "https://api.github.com/repos/expressly/php-common/zipball/1507bee53ed1c77fa94dc9b58853642fb116b544",
+                "reference": "1507bee53ed1c77fa94dc9b58853642fb116b544",
                 "shasum": ""
             },
             "require": {
@@ -168,10 +168,10 @@
             ],
             "description": "Expressly common PHP library",
             "support": {
-                "source": "https://github.com/expressly/php-common/tree/master",
+                "source": "https://github.com/expressly/php-common/tree/1.0.2",
                 "issues": "https://github.com/expressly/php-common/issues"
             },
-            "time": "2015-06-08 13:43:06"
+            "time": "2015-06-10 06:20:16"
         },
         {
             "name": "kriswallsmith/buzz",
