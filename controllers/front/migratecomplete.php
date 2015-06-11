@@ -3,6 +3,7 @@
 use Expressly\Entity\Customer;
 use Expressly\Entity\Phone;
 use Expressly\Event\CustomerMigrateEvent;
+use Expressly\Exception\GenericException;
 
 class expresslymigratecompleteModuleFrontController extends ModuleFrontControllerCore
 {
@@ -34,7 +35,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             // 'user_already_migrated' should be proper error message, not a plain string
             if ($json == 'user_already_migrated') {
-                Tools::redirect('/');
+                throw new GenericException(sprintf('User %s already migrated', $_GET['uuid']));
             }
 
             $email = $json['migration']['data']['email'];
@@ -43,6 +44,12 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             if ($id) {
                 $psCustomer = new CustomerCore($id);
+
+                $this->module->app['logger']->addWarning(sprintf(
+                    'User %s already exists in the store %s',
+                    $email,
+                    $merchant->getName()
+                ));
 
                 $event = new CustomerMigrateEvent($merchant, $_GET['uuid'], CustomerMigrateEvent::EXISTING_CUSTOMER);
             } else {
@@ -74,7 +81,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psAddress = new AddressCore();
 
                     $psAddress->id_customer = $psCustomer->id;
-                    $psAddress->alias = $address['alias'];
+                    $psAddress->alias = !empty($address['alias']) ? $address['alias'] : 'default';
                     $psAddress->firstname = $address['firstName'];
                     $psAddress->lastname = $address['lastName'];
 
@@ -101,21 +108,46 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
                     $psAddress->add();
                 }
+
+                // Forcefully log user in, if we just created them
+                $psCustomer->logged = 1;
+                $this->context->customer = $psCustomer;
+
+                $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
+                    $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
+                $this->context->cookie->id_customer = (int)($psCustomer->id);
+                $this->context->cookie->customer_lastname = $psCustomer->lastname;
+                $this->context->cookie->customer_firstname = $psCustomer->firstname;
+                $this->context->cookie->logged = 1;
+                $this->context->cookie->is_guest = $psCustomer->isGuest();
+                $this->context->cookie->passwd = $psCustomer->passwd;
+                $this->context->cookie->email = $psCustomer->email;
+
+                // Dispatch password creation email
+                $mailUser = ConfigurationCore::get('PS_MAIL_USER');
+                $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
+                if (!empty($mailUser) && !empty($mailPass)) {
+                    $context = ContextCore::getContext();
+
+                    if (MailCore::Send(
+                        $context->language->id,
+                        'password_query',
+                        MailCore::l('Password query confirmation'),
+                        $mail_params = array(
+                            '{email}' => $psCustomer->email,
+                            '{lastname}' => $psCustomer->lastname,
+                            '{firstname}' => $psCustomer->firstname,
+                            '{url}' => $context->link->getPageLink('password', true, null,
+                                'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
+                        ),
+                        $psCustomer->email,
+                        sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
+                    )
+                    ) {
+                        $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
+                    }
+                }
             }
-
-            // Forcefully log user in
-            $psCustomer->logged = 1;
-            $this->context->customer = $psCustomer;
-
-            $this->context->cookie->id_compare = isset($this->context->cookie->id_compare) ?
-                $this->context->cookie->id_compare : CompareProductCore::getIdCompareByIdCustomer($psCustomer->id);
-            $this->context->cookie->id_customer = (int)($psCustomer->id);
-            $this->context->cookie->customer_lastname = $psCustomer->lastname;
-            $this->context->cookie->customer_firstname = $psCustomer->firstname;
-            $this->context->cookie->logged = 1;
-            $this->context->cookie->is_guest = $psCustomer->isGuest();
-            $this->context->cookie->passwd = $psCustomer->passwd;
-            $this->context->cookie->email = $psCustomer->email;
 
             // Add items (product/coupon) to cart
             if (!empty($json['cart'])) {
@@ -156,31 +188,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     }
                 }
 
-                $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
-            }
-
-            // Dispatch password creation email
-            $mailUser = ConfigurationCore::get('PS_MAIL_USER');
-            $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
-            if (!empty($mailUser) && !empty($mailPass)) {
-                $context = ContextCore::getContext();
-
-                if (MailCore::Send(
-                    $context->language->id,
-                    'password_query',
-                    MailCore::l('Password query confirmation'),
-                    $mail_params = array(
-                        '{email}' => $psCustomer->email,
-                        '{lastname}' => $psCustomer->lastname,
-                        '{firstname}' => $psCustomer->firstname,
-                        '{url}' => $context->link->getPageLink('password', true, null,
-                            'token=' . $psCustomer->secure_key . '&id_customer=' . (int)$psCustomer->id)
-                    ),
-                    $psCustomer->email,
-                    sprintf('%s %s', $psCustomer->firstname, $psCustomer->lastname)
-                )
-                ) {
-                    $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
+                if ($this->context->cookie->logged) {
+                    $this->context->cookie->id_cart = $psCart instanceof CartCore ? (int)$psCart->id : $psCart;
                 }
             }
 

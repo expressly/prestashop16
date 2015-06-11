@@ -72,7 +72,7 @@ class Expressly extends ModuleCore
                 }
 
                 if (!$event->isSuccessful()) {
-                    throw new \Exception(self::processError($event));
+                    throw new Expressly\Exception\GenericException(self::processError($event));
                 }
 
                 if (!empty($register)) {
@@ -250,8 +250,8 @@ class Expressly extends ModuleCore
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', '');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
             sprintf('%s/img/%s', $url, ConfigurationCore::get('PS_LOGO')));
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . '/content/3-terms-and-conditions-of-use');
-        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $url . '/content/3-terms-and-conditions-of-use');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . 'index.php?id_cms=3&controller=cms');
+        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $url . 'index.php?id_cms=3&controller=cms');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $url);
 //        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', '/');
 //        ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', true);
@@ -268,8 +268,12 @@ class Expressly extends ModuleCore
             return false;
         }
 
-        $merchant = $this->app['merchant.provider']->getMerchant();
-        $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\PasswordedEvent($merchant));
+        try {
+            $merchant = $this->app['merchant.provider']->getMerchant();
+            $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\PasswordedEvent($merchant));
+        } catch (\Exception $e) {
+            $this->module->app['logger']->addError((string)$e);
+        }
 
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_IMAGE');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_TERMS');
