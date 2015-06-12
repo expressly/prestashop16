@@ -130,9 +130,7 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
                 die(Tools::jsonEncode($response->toArray()));
             }
         } catch (\Exception $e) {
-            die(Tools::jsonEncode(array(
-                'error' => sprintf('%s - %s::%u', $e->getFile(), $e->getMessage(), $e->getLine())
-            )));
+            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
         }
     }
 }

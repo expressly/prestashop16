@@ -197,7 +197,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             $this->module->dispatcher->dispatch('customer.migrate.success', $event);
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError((string)$e);
+            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
         Tools::redirect('/');

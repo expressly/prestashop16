@@ -87,10 +87,10 @@ class Expressly extends ModuleCore
                 $provider->setMerchant($merchant);
             }
         } catch (Buzz\Exception\RequestException $e) {
-            $this->app['logger']->addError((string)$e);
+            $this->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
             $errors[] = $this->displayError('We had trouble talking to the server. The server could be down; please contact expressly.');
         } catch (\Exception $e) {
-            $this->app['logger']->addError((string)$e);
+            $this->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
             $errors[] = $this->displayError((string)$e->getMessage());
         }
 
@@ -272,7 +272,7 @@ class Expressly extends ModuleCore
             $merchant = $this->app['merchant.provider']->getMerchant();
             $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\PasswordedEvent($merchant));
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError((string)$e);
+            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_IMAGE');

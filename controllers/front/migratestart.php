@@ -24,11 +24,11 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
 
             $this->response = $event->getResponse();
         } catch (ExceptionInterface $e) {
-            $this->module->app['logger']->addError($e->getMessage());
+            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
 
             ToolsCore::redirect('/');
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError((string)$e);
+            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
 
             ToolsCore::redirect('/');
         }
