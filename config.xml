@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-	<name>Expressly</name>
+	<name>expressly</name>
 	<displayName><![CDATA[Expressly]]></displayName>
-	<version><![CDATA[0.5.0]]></version>
-	<description><![CDATA[This module enables Expressly one click customer acquisition integration]]></description>
+	<version><![CDATA[1.0.1]]></version>
+	<description><![CDATA[Description.]]></description>
 	<author><![CDATA[Expressly]]></author>
 	<tab><![CDATA[advertising_marketing]]></tab>
 	<confirmUninstall><![CDATA[Are you sure you want to uninstall?]]></confirmUninstall>
