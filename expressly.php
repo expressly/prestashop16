@@ -11,9 +11,9 @@ class Expressly extends ModuleCore
 
     public function __construct()
     {
-        $this->name = "Expressly";
+        $this->name = "expressly";
         $this->tab = "advertising_marketing";
-        $this->version = "0.5.0";
+        $this->version = "1.0.1";
         $this->author = "Expressly";
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array(
@@ -25,7 +25,7 @@ class Expressly extends ModuleCore
         parent::__construct();
 
         $this->displayName = 'Expressly';
-        $this->description = 'This module enables Expressly one click customer acquisition integration';
+        $this->description = 'Description.';
         $this->confirmUninstall = 'Are you sure you want to uninstall?';
         require __DIR__ . '/vendor/autoload.php';
         $this->setup();
