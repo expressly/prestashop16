@@ -107,18 +107,22 @@ class Customers
         }
     }
 
-    public static function getBulk()
+    public static function getBulk(Application $app)
     {
         $json = file_get_contents('php://input');
         $json = json_decode($json);
 
         $users = array();
 
-        foreach ($json->customers as $customer) {
-            $id = \CustomerCore::customerExists($customer, true);
-            if (!\CustomerCore::isBanned($id)) {
-                $users[] = $customer;
+        try {
+            foreach ($json->emails as $customer) {
+                $id = \CustomerCore::customerExists($customer, true);
+                if (!\CustomerCore::isBanned($id)) {
+                    $users[] = $customer;
+                }
             }
+        } catch (\Exception $e) {
+            $app['logger']->addError(ExceptionFormatter::format($e));
         }
 
         $presenter = new BatchCustomerPresenter($users);

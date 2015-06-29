@@ -12,23 +12,27 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
         $this->display_column_left = false;
         $this->display_column_right = false;
 
-        $merchant = $this->module->app['merchant.provider']->getMerchant();
+        $app = $this->module->getApp();
+        $dispatcher = $this->module->getDispatcher();
+
+        $merchant = $app['merchant.provider']->getMerchant();
         $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
 
         try {
-            $this->module->dispatcher->dispatch('customer.migrate.popup', $event);
+            $dispatcher->dispatch('customer.migrate.popup', $event);
 
             if (!$event->isSuccessful()) {
                 throw new Expressly\Exception\GenericException(Expressly::processError($event));
             }
 
+
             $this->response = $event->getResponse();
         } catch (ExceptionInterface $e) {
-            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
+            $app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
 
             ToolsCore::redirect('/');
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
+            $app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
 
             ToolsCore::redirect('/');
         }
@@ -40,7 +44,7 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
     {
         parent::initContent();
 
-        $this->addJS(_THEME_JS_DIR_.'index.js');
+        $this->addJS(_THEME_JS_DIR_ . 'index.js');
 
         $this->context->smarty->assign(array(
             'HOOK_HOME' => Hook::exec('displayHome'),

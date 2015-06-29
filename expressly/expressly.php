@@ -6,6 +6,7 @@ if (!defined('_PS_VERSION_')) {
 
 class Expressly extends ModuleCore
 {
+    public $setup = false;
     public $app;
     public $dispatcher;
 
@@ -25,29 +26,57 @@ class Expressly extends ModuleCore
         parent::__construct();
 
         $this->displayName = 'Expressly';
-        $this->description = 'Description.';
+        $this->description = 'https://buyexpressly.com';
         $this->confirmUninstall = 'Are you sure you want to uninstall?';
-        require __DIR__ . '/vendor/autoload.php';
-        $this->setup();
     }
 
+    public function getApp()
+    {
+        $this->setup();
+
+        return $this->app;
+    }
+
+    public function getDispatcher()
+    {
+        $this->setup();
+
+        return $this->dispatcher;
+    }
+
+    /**
+     * Cannot be autoloaded in the constructor as Avalara disagrees with PHP namespaces being anymore than 1 level deep.
+     * Application instantiation has to now be called explicitly.
+     */
     private function setup()
     {
-        $expressly = new Expressly\Client(Expressly\Entity\MerchantType::PRESTASHOP);
-        $app = $expressly->getApp();
+        if (!$this->setup) {
+            /**
+             * Has been reported to Avalara, awaiting response.
+             * Temporary fix until Avalara fixes their autoloading issue, which violates PHP namespaces.
+             */
+            spl_autoload_unregister('avalaraAutoload');
+            require_once __DIR__ . '/vendor/autoload.php';
 
-        // override MerchantProvider
-        $app['merchant.provider'] = $app->share(function () {
-            return new Module\Expressly\MerchantProvider();
-        });
+            $expressly = new Expressly\Client(Expressly\Entity\MerchantType::PRESTASHOP);
+            $app = $expressly->getApp();
 
-        $this->app = $app;
-        $this->dispatcher = $this->app['dispatcher'];
+            // override MerchantProvider
+            $app['merchant.provider'] = $app->share(function () {
+                return new Module\Expressly\MerchantProvider();
+            });
+
+            $this->app = $app;
+            $this->dispatcher = $this->app['dispatcher'];
+
+            $this->setup = true;
+        }
     }
 
     public function getContent()
     {
         $errors = array();
+        $this->setup();
 
         try {
             if (Tools::isSubmit('submitExpresslyPreferences')) {
@@ -102,7 +131,7 @@ class Expressly extends ModuleCore
         return implode('', $errors) . $this->displayForm();
     }
 
-    public static function processError(Symfony\Component\EventDispatcher\Event $event)
+    public static function processError($event)
     {
         $content = $event->getContent();
         $message = array(
@@ -269,10 +298,11 @@ class Expressly extends ModuleCore
         }
 
         try {
+            $this->setup();
             $merchant = $this->app['merchant.provider']->getMerchant();
             $this->dispatcher->dispatch('merchant.delete', new Expressly\Event\PasswordedEvent($merchant));
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
+            $this->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_IMAGE');

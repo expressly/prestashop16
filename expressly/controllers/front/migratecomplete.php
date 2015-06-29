@@ -14,12 +14,20 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
+
+        $app = $this->module->getApp();
+        $dispatcher = $this->module->getDispatcher();
+
         try {
-            $merchant = $this->module->app['merchant.provider']->getMerchant();
+            $merchant = $app['merchant.provider']->getMerchant();
             $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
-            $this->module->dispatcher->dispatch('customer.migrate.data', $event);
+            $dispatcher->dispatch('customer.migrate.data', $event);
 
             $json = $event->getContent();
+
+            if (!$event->isSuccessful()) {
+                throw new GenericException(Expressly::processError($event));
+            }
 
             if (!empty($json['code'])) {
                 // record error
@@ -45,7 +53,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             if ($id) {
                 $psCustomer = new CustomerCore($id);
 
-                $this->module->app['logger']->addWarning(sprintf(
+                $app['logger']->addWarning(sprintf(
                     'User %s already exists in the store %s',
                     $email,
                     $merchant->getName()
@@ -74,7 +82,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
                 // Addresses
                 foreach ($customer['addresses'] as $address) {
-                    $countryCodeProvider = $this->module->app['country_code.provider'];
+                    $countryCodeProvider = $app['country_code.provider'];
                     $phone = isset($address['phone']) ?
                         (!empty($customer['phones'][$address['phone']]) ?
                             $customer['phones'][$address['phone']] : null) : null;
@@ -195,9 +203,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             $this->context->cookie->write();
 
-            $this->module->dispatcher->dispatch('customer.migrate.success', $event);
+            $dispatcher->dispatch('customer.migrate.success', $event);
         } catch (\Exception $e) {
-            $this->module->app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
+            $app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
         Tools::redirect('/');

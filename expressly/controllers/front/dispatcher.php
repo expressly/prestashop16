@@ -13,15 +13,16 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
         }
 
         $query = $_GET['xly'];
+        $app = $this->module->getApp();
 
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'POST':
                 if (preg_match("/^\/?expressly\/api\/batch\/invoice\/?$/", $query, $matches)) {
-                    Invoices::getBulk();
+                    Invoices::getBulk($app);
                 }
 
                 if (preg_match("/^\/?expressly\/api\/batch\/customer\/?$/", $query, $matches)) {
-                    Customers::getBulk();
+                    Customers::getBulk($app);
                 }
                 break;
             case 'GET':
@@ -32,7 +33,7 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 
                 if (preg_match("/^\/?expressly\/api\/user\/([\w-\.]+@[\w-\.]+)\/?$/", $query, $matches)) {
                     $email = array_pop($matches);
-                    Customers::getByEmail($this->module->app, $email);
+                    Customers::getByEmail($app, $email);
                 }
 
                 if (preg_match("/^\/?expressly\/api\/([\w-]+)\/?$/", $query, $matches)) {
