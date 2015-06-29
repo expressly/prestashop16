@@ -275,10 +275,11 @@ class Expressly extends ModuleCore
         }
 
         $url = sprintf('http://%s', $_SERVER['HTTP_HOST']);
+        $url = rtrim($url, '/') . '/';
 
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', '');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE',
-            sprintf('%s/img/%s', $url, ConfigurationCore::get('PS_LOGO')));
+            sprintf('%simg/%s', $url, ConfigurationCore::get('PS_LOGO')));
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $url . 'index.php?id_cms=3&controller=cms');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $url . 'index.php?id_cms=3&controller=cms');
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $url);

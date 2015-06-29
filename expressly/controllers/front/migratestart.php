@@ -25,7 +25,6 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
                 throw new Expressly\Exception\GenericException(Expressly::processError($event));
             }
 
-
             $this->response = $event->getResponse();
         } catch (ExceptionInterface $e) {
             $app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));

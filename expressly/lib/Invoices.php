@@ -4,6 +4,7 @@ namespace Module\Expressly;
 
 use Expressly\Entity\Invoice;
 use Expressly\Entity\Order;
+use Expressly\Exception\ExceptionFormatter;
 use Expressly\Presenter\BatchInvoicePresenter;
 use Silex\Application;
 

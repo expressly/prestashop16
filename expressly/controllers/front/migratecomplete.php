@@ -14,7 +14,6 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             Tools::redirect('/');
         }
 
-
         $app = $this->module->getApp();
         $dispatcher = $this->module->getDispatcher();
 
@@ -28,6 +27,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             if (!$event->isSuccessful()) {
                 throw new GenericException(Expressly::processError($event));
             }
+
 
             if (!empty($json['code'])) {
                 // record error
@@ -49,6 +49,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $email = $json['migration']['data']['email'];
             $id = CustomerCore::customerExists($email, true);
             $psCustomer = new CustomerCore();
+
 
             if ($id) {
                 $psCustomer = new CustomerCore($id);

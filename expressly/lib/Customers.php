@@ -117,8 +117,14 @@ class Customers
         try {
             foreach ($json->emails as $customer) {
                 $id = \CustomerCore::customerExists($customer, true);
-                if (!\CustomerCore::isBanned($id)) {
-                    $users[] = $customer;
+                if (!$id) {
+                    continue;
+                }
+
+                if (\CustomerCore::isBanned($id)) {
+                    $users['deleted'][] = $customer;
+                } else {
+                    $users['existing'][] = $customer;
                 }
             }
         } catch (\Exception $e) {
