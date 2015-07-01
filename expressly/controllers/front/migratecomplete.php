@@ -29,21 +29,13 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $dispatcher->dispatch('customer.migrate.data', $event);
 
             $json = $event->getContent();
-
             if (!$event->isSuccessful()) {
+                // TODO: hold exception definitions in common
+                if (!empty($json['code']) && $json['code'] == 'user_already_migrated') {
+                    $existing = true;
+                }
+
                 throw new GenericException(Expressly::processError($event));
-            }
-
-            if (!empty($json['code'])) {
-                // record error
-
-                Tools::redirect('/');
-            }
-
-            if (empty($json)) {
-                // record error
-
-                Tools::redirect('/');
             }
 
             $email = $json['migration']['data']['email'];
@@ -51,9 +43,10 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $psCustomer = new CustomerCore();
 
             if ($id) {
+                $this->email = $email;
                 $psCustomer = new CustomerCore($id);
 
-                $app['logger']->addWarning(sprintf(
+                $app['logger']->warning(sprintf(
                     'User %s already exists in the store %s',
                     $email,
                     $merchant->getName()
