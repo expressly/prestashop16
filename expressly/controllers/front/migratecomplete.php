@@ -7,8 +7,13 @@ use Expressly\Exception\GenericException;
 
 class expresslymigratecompleteModuleFrontController extends ModuleFrontControllerCore
 {
+    private $email;
+
     public function init()
     {
+        $this->display_column_left = false;
+        $this->display_column_right = false;
+
         // get key from url
         if (empty($_GET['uuid'])) {
             Tools::redirect('/');
@@ -16,6 +21,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
         $app = $this->module->getApp();
         $dispatcher = $this->module->getDispatcher();
+        $existing = false;
 
         try {
             $merchant = $app['merchant.provider']->getMerchant();
@@ -27,7 +33,6 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             if (!$event->isSuccessful()) {
                 throw new GenericException(Expressly::processError($event));
             }
-
 
             if (!empty($json['code'])) {
                 // record error
@@ -41,15 +46,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                 Tools::redirect('/');
             }
 
-            // 'user_already_migrated' should be proper error message, not a plain string
-            if ($json == 'user_already_migrated') {
-                throw new GenericException(sprintf('User %s already migrated', $_GET['uuid']));
-            }
-
             $email = $json['migration']['data']['email'];
             $id = CustomerCore::customerExists($email, true);
             $psCustomer = new CustomerCore();
-
 
             if ($id) {
                 $psCustomer = new CustomerCore($id);
@@ -61,6 +60,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                 ));
 
                 $event = new CustomerMigrateEvent($merchant, $_GET['uuid'], CustomerMigrateEvent::EXISTING_CUSTOMER);
+                $existing = true;
             } else {
                 $customer = $json['migration']['data']['customerData'];
 
@@ -206,9 +206,29 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             $dispatcher->dispatch('customer.migrate.success', $event);
         } catch (\Exception $e) {
-            $app['logger']->addError(Expressly\Exception\ExceptionFormatter::format($e));
+            $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
-        Tools::redirect('/');
+        if (!$existing) {
+            Tools::redirect('/');
+        }
+
+        parent::init();
+    }
+
+    public function initContent()
+    {
+        parent::initContent();
+
+        $this->addJS(_THEME_JS_DIR_ . 'index.js');
+
+        $this->context->smarty->assign(array(
+            'HOOK_HOME' => Hook::exec('displayHome'),
+            'HOOK_HOME_TAB' => Hook::exec('displayHomeTab'),
+            'HOOK_HOME_TAB_CONTENT' => Hook::exec('displayHomeTabContent'),
+            'EMAIL' => $this->email
+        ));
+
+        $this->setTemplate('migratecomplete.tpl');
     }
 }

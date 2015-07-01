@@ -51,7 +51,7 @@ class Invoices
                 $invoices[] = $invoice;
             }
         } catch (\Exception $e) {
-            $app['logger']->addError(ExceptionFormatter::format($e));
+            $app['logger']->error(ExceptionFormatter::format($e));
         }
 
         $presenter = new BatchInvoicePresenter($invoices);
