@@ -126,9 +126,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                 $this->context->cookie->email = $psCustomer->email;
 
                 // Dispatch password creation email
-                $mailUser = ConfigurationCore::get('PS_MAIL_USER');
-                $mailPass = ConfigurationCore::get('PS_MAIL_PASSWD');
-                if (!empty($mailUser) && !empty($mailPass)) {
+                try {
                     $context = ContextCore::getContext();
 
                     if (MailCore::Send(
@@ -148,6 +146,8 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     ) {
                         $context->smarty->assign(array('confirmation' => 2, 'customer_email' => $psCustomer->email));
                     }
+                } catch (\Exception $e) {
+                    $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
                 }
             }
 

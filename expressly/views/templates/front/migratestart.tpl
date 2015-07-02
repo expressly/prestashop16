@@ -12,6 +12,8 @@
     <div class="clearfix">{$HOOK_HOME}</div>
 {/if}
 
+{$EXPRESSLY_POPUP}
+
 {literal}
     <script type="text/javascript">
         (function () {
@@ -47,7 +49,12 @@
             openPrivacy = function (event) {
                 window.open(event.href, '_blank');
             };
+
+            (function () {
+                // make sure our popup is on top or hierarchy
+                content = document.getElementById('xly');
+                document.body.insertBefore(content, document.body.children[0]);
+            })();
         })();
     </script>
 {/literal}
-{$EXPRESSLY_POPUP}
