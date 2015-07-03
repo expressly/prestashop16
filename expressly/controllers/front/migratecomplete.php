@@ -31,7 +31,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             $json = $event->getContent();
             if (!$event->isSuccessful()) {
                 // TODO: hold exception definitions in common
-                if (!empty($json['code']) && $json['code'] == 'user_already_migrated') {
+                if (!empty($json['code']) && $json['code'] == 'USER_ALREADY_MIGRATED') {
                     $existing = true;
                 }
 
