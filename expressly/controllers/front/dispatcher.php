@@ -18,22 +18,26 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'POST':
                 if (preg_match("/^\/?expressly\/api\/batch\/invoice\/?$/", $query, $matches)) {
-                    Invoices::getBulk($app);
+                    \Tools::jsonEncode(Invoices::getBulk($app));
+                    die;
                 }
 
                 if (preg_match("/^\/?expressly\/api\/batch\/customer\/?$/", $query, $matches)) {
-                    Customers::getBulk($app);
+                    \Tools::jsonEncode(Customers::getBulk($app));
+                    die;
                 }
                 break;
             case 'GET':
                 if (preg_match("/^\/?expressly\/api\/ping\/?$/", $query, $matches)) {
                     $presenter = new PingPresenter();
-                    die(Tools::jsonEncode($presenter->toArray()));
+                    \Tools::jsonEncode($presenter->toArray());
+                    die;
                 }
 
                 if (preg_match("/^\/?expressly\/api\/user\/([\w-\.]+@[\w-\.]+)\/?$/", $query, $matches)) {
                     $email = array_pop($matches);
-                    Customers::getByEmail($app, $email);
+                    \Tools::jsonEncode(Customers::getByEmail($app, $email));
+                    die;
                 }
 
                 if (preg_match("/^\/?expressly\/api\/([\w-]+)\/?$/", $query, $matches)) {

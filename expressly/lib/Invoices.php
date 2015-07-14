@@ -5,6 +5,7 @@ namespace Module\Expressly;
 use Expressly\Entity\Invoice;
 use Expressly\Entity\Order;
 use Expressly\Exception\ExceptionFormatter;
+use Expressly\Exception\GenericException;
 use Expressly\Presenter\BatchInvoicePresenter;
 use Silex\Application;
 
@@ -18,7 +19,15 @@ class Invoices
         $invoices = array();
 
         try {
+            if (!property_exists($json, 'customers')) {
+                throw new GenericException('Invalid JSON input');
+            }
+
             foreach ($json->customers as $customer) {
+                if (!property_exists($customer, 'email')) {
+                    continue;
+                }
+
                 $psCustomer = new \CustomerCore();
                 $psCustomer->getByEmail($customer->email);
 
@@ -55,6 +64,6 @@ class Invoices
         }
 
         $presenter = new BatchInvoicePresenter($invoices);
-        die(\Tools::jsonEncode($presenter->toArray()));
+        return $presenter->toArray();
     }
 }

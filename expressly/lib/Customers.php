@@ -7,6 +7,7 @@ use Expressly\Entity\Customer;
 use Expressly\Entity\Email;
 use Expressly\Entity\Phone;
 use Expressly\Exception\ExceptionFormatter;
+use Expressly\Exception\GenericException;
 use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\CustomerMigratePresenter;
 use Silex\Application;
@@ -100,11 +101,13 @@ class Customers
                 $merchant = $app['merchant.provider']->getMerchant();
                 $response = new CustomerMigratePresenter($merchant, $customer, $emailAddress, $psCustomer->id);
 
-                die(\Tools::jsonEncode($response->toArray()));
+                return $response->toArray();
             }
         } catch (\Exception $e) {
             $app['logger']->error(ExceptionFormatter::format($e));
         }
+
+        return array();
     }
 
     public static function getBulk(Application $app)
@@ -115,6 +118,10 @@ class Customers
         $users = array();
 
         try {
+            if (!property_exists($json, 'emails')) {
+                throw new GenericException('Invalid JSON input');
+            }
+
             foreach ($json->emails as $customer) {
                 $id = \CustomerCore::customerExists($customer, true);
                 if (!$id) {
@@ -132,6 +139,6 @@ class Customers
         }
 
         $presenter = new BatchCustomerPresenter($users);
-        die(\Tools::jsonEncode($presenter->toArray()));
+        return $presenter->toArray();
     }
 }
