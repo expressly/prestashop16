@@ -289,7 +289,17 @@ class Expressly extends ModuleCore
         ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH',
             '?controller=dispatcher&fc=module&module=expressly&xly=');
 
+        $this->registerHook('DisplayThankYouBanner');
+
         return true;
+    }
+
+    /**
+     * Add {hook h='displayThankYouBanner' mod='expressly'} to your theme template
+     */
+    public function hookDisplayThankYouBanner($params)
+    {
+        return '<p><img src="https://placeholdit.imgix.net/~text?txtsize=23&txt=782%C3%9790&w=782&h=90" /></p>';
     }
 
     public function uninstall()
@@ -314,6 +324,8 @@ class Expressly extends ModuleCore
 //        ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_OFFER');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PASSWORD');
         ConfigurationCore::deleteByName('EXPRESSLY_PREFERENCES_PATH');
+
+        $this->unregisterHook('DisplayThankYouBanner');
 
         return true;
     }
