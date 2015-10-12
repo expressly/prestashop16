@@ -299,7 +299,34 @@ class Expressly extends ModuleCore
      */
     public function hookDisplayThankYouBanner($params)
     {
-        return '<p><img src="https://placeholdit.imgix.net/~text?txtsize=23&txt=782%C3%9790&w=782&h=90" /></p>';
+        $this->setup();
+
+        $merchant = $this->app['merchant.provider']->getMerchant();
+        $email    = $this->context->customer->email;
+
+        $event = new Expressly\Event\BannerEvent($merchant, $email);
+
+        try {
+
+            $this->dispatcher->dispatch(Expressly\Subscriber\BannerSubscriber::BANNER_REQUEST, $event);
+
+            if (!$event->isSuccessful()) {
+                throw new Expressly\Exception\GenericException(self::processError($event));
+            }
+
+        } catch (Buzz\Exception\RequestException $e) {
+
+            $this->app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
+            $errors[] = $this->displayError('We had trouble talking to the server. The server could be down; please contact expressly.');
+
+        } catch (\Exception $e) {
+
+            $this->app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
+            $errors[] = $this->displayError((string)$e->getMessage());
+
+        }
+
+        return Expressly\Helper\BannerHelper::toHtml($event);
     }
 
     public function uninstall()
