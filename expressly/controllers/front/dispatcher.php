@@ -1,6 +1,15 @@
 <?php
 
+use Expressly\Entity\Route;
 use Expressly\Presenter\PingPresenter;
+use Expressly\Presenter\RegisteredPresenter;
+use Expressly\Route\BatchCustomer;
+use Expressly\Route\BatchInvoice;
+use Expressly\Route\CampaignMigration;
+use Expressly\Route\CampaignPopup;
+use Expressly\Route\Ping;
+use Expressly\Route\Registered;
+use Expressly\Route\UserData;
 use Module\Expressly\Customers;
 use Module\Expressly\Invoices;
 
@@ -14,39 +23,60 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
 
         $query = $_GET['xly'];
         $app = $this->module->getApp();
+        $route = $app['route.resolver']->process($query);
 
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case 'POST':
-                if (preg_match("/^\/?expressly\/api\/batch\/invoice\/?$/", $query, $matches)) {
-                    echo \Tools::jsonEncode(Invoices::getBulk($app));
+        if ($route instanceof Route) {
+            switch ($route->getName()) {
+                case Ping::getName():
+                    echo \Tools::jsonEncode($this->ping());
                     die;
-                }
-
-                if (preg_match("/^\/?expressly\/api\/batch\/customer\/?$/", $query, $matches)) {
+                    break;
+                case Registered::getName():
+                    echo \Tools::jsonEncode($this->registered());
+                    die;
+                    break;
+                case UserData::getName():
+                    $data = $route->getData();
+                    echo \Tools::jsonEncode(Customers::getByEmail($app, $data['email']));
+                    die;
+                    break;
+                case CampaignPopup::getName():
+                    $data = $route->getData();
+                    \Tools::redirect("migratestart&fc=module&module=expressly&uuid={$data['uuid']}");
+                    break;
+                case CampaignMigration::getName():
+                    $data = $route->getData();
+                    \Tools::redirect("migratecomplete&fc=module&module=expressly&uuid={$data['uuid']}");
+                    break;
+                case BatchCustomer::getName():
                     echo \Tools::jsonEncode(Customers::getBulk($app));
                     die;
-                }
-                break;
-            case 'GET':
-                if (preg_match("/^\/?expressly\/api\/ping\/?$/", $query, $matches)) {
-                    $presenter = new PingPresenter();
-                    echo \Tools::jsonEncode($presenter->toArray());
+                    break;
+                case BatchInvoice::getName():
+                    echo \Tools::jsonEncode(Invoices::getBulk($app));
                     die;
-                }
-
-                if (preg_match("/^\/?expressly\/api\/user\/([\w-\.]+@[\w-\.]+)\/?$/", $query, $matches)) {
-                    $email = array_pop($matches);
-                    echo \Tools::jsonEncode(Customers::getByEmail($app, $email));
-                    die;
-                }
-
-                if (preg_match("/^\/?expressly\/api\/([\w-]+)\/?$/", $query, $matches)) {
-                    $key = array_pop($matches);
-                    Tools::redirect("migratestart&fc=module&module=expressly&uuid={$key}");
-                }
-                break;
+                    break;
+            }
         }
 
-        Tools::redirect('/');
+        if (http_response_code() === 401) {
+            die;
+        }
+
+        \Tools::redirect('/');
+    }
+
+    private function ping()
+    {
+        $presenter = new PingPresenter();
+
+        return $presenter->toArray();
+    }
+
+    private function registered()
+    {
+        $presenter = new RegisteredPresenter();
+
+        return $presenter->toArray();
     }
 }

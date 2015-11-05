@@ -9,9 +9,13 @@ class MerchantProvider implements MerchantProviderInterface
 {
     private $merchant;
 
+    const APIKEY = 'EXPRESSLY_PREFERENCES_APIKEY';
+    const HOST = 'EXPRESSLY_PREFERENCES_HOST';
+    const PATH = 'EXPRESSLY_PREFERENCES_PATH';
+
     public function __construct()
     {
-        if (\ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION')) {
+        if (\ConfigurationCore::get(self::APIKEY)) {
             $this->updateMerchant();
         }
     }
@@ -20,16 +24,9 @@ class MerchantProvider implements MerchantProviderInterface
     {
         $merchant = new Merchant();
         $merchant
-            ->setName(\ConfigurationCore::get('PS_SHOP_NAME'))
-            ->setUuid(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_UUID'))
-            ->setImage(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_IMAGE'))
-            ->setTerms(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_TERMS'))
-            ->setPolicy(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_POLICY'))
-            ->setDestination(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_DESTINATION'))
-            ->setHost(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_HOST'))
-            ->setOffer(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_OFFER'))
-            ->setPassword(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_PASSWORD'))
-            ->setPath(\ConfigurationCore::get('EXPRESSLY_PREFERENCES_PATH'));
+            ->setApiKey(\ConfigurationCore::get(self::APIKEY))
+            ->setHost(\ConfigurationCore::get(self::HOST))
+            ->setPath(\ConfigurationCore::get(self::PATH));
 
         $this->merchant = $merchant;
     }
@@ -47,15 +44,9 @@ class MerchantProvider implements MerchantProviderInterface
     {
         $this->merchant = $merchant;
 
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_UUID', $merchant->getUuid());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_IMAGE', $merchant->getImage());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_TERMS', $merchant->getTerms());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_POLICY', $merchant->getPolicy());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_DESTINATION', $merchant->getDestination());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_HOST', $merchant->getHost());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_OFFER', $merchant->getOffer());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PASSWORD', $merchant->getPassword());
-        \ConfigurationCore::updateValue('EXPRESSLY_PREFERENCES_PATH', $merchant->getPath());
+        \ConfigurationCore::updateValue(self::APIKEY, $merchant->getApiKey());
+        \ConfigurationCore::updateValue(self::HOST, $merchant->getHost());
+        \ConfigurationCore::updateValue(self::PATH, $merchant->getPath());
 
         return $this;
     }

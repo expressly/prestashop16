@@ -2,6 +2,7 @@
 
 use Buzz\Exception\ExceptionInterface;
 use Expressly\Event\CustomerMigrateEvent;
+use Expressly\Subscriber\CustomerMigrationSubscriber;
 
 class expresslymigratestartModuleFrontController extends ModuleFrontControllerCore
 {
@@ -19,7 +20,7 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
         $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
 
         try {
-            $dispatcher->dispatch('customer.migrate.popup', $event);
+            $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_POPUP, $event);
 
             if (!$event->isSuccessful()) {
                 throw new Expressly\Exception\GenericException(Expressly::processError($event));

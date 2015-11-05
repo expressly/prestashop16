@@ -4,6 +4,8 @@ use Expressly\Entity\Customer;
 use Expressly\Entity\Phone;
 use Expressly\Event\CustomerMigrateEvent;
 use Expressly\Exception\GenericException;
+use Expressly\Exception\UserExistsException;
+use Expressly\Subscriber\CustomerMigrationSubscriber;
 
 class expresslymigratecompleteModuleFrontController extends ModuleFrontControllerCore
 {
@@ -26,13 +28,15 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
         try {
             $merchant = $app['merchant.provider']->getMerchant();
             $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
-            $dispatcher->dispatch('customer.migrate.data', $event);
+            $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_DATA, $event);
 
             $json = $event->getContent();
             if (!$event->isSuccessful()) {
                 // TODO: hold exception definitions in common
                 if (!empty($json['code']) && $json['code'] == 'USER_ALREADY_MIGRATED') {
                     $existing = true;
+
+                    throw new UserExistsException();
                 }
 
                 throw new GenericException(Expressly::processError($event));
@@ -197,7 +201,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
             $this->context->cookie->write();
 
-            $dispatcher->dispatch('customer.migrate.success', $event);
+            $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_SUCCESS, $event);
         } catch (\Exception $e) {
             $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
         }
