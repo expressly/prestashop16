@@ -14,7 +14,7 @@ class Expressly extends ModuleCore
     {
         $this->name = "expressly";
         $this->tab = "advertising_marketing";
-        $this->version = "0.2.0";
+        $this->version = "0.3.0";
         $this->author = "Expressly";
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array(
