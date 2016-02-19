@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "f375edbf34d3965766c77d44eb683006",
-    "content-hash": "6c9d4873f4b7e22501f873acc64f43f8",
+    "hash": "4c2d3be332382f05164b7b2c5eccb99e",
+    "content-hash": "ac07c85fa5d42f055674d0e8523838b5",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -75,16 +75,16 @@
         },
         {
             "name": "expressly/php-common",
-            "version": "2.3.3",
+            "version": "2.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/expressly/php-common.git",
-                "reference": "39be9eed91ef9184cebbf939dc351344c83ceb2b"
+                "reference": "ec0fa61cd69b47d007913102d1f73fa87dec6a71"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/expressly/php-common/zipball/39be9eed91ef9184cebbf939dc351344c83ceb2b",
-                "reference": "39be9eed91ef9184cebbf939dc351344c83ceb2b",
+                "url": "https://api.github.com/repos/expressly/php-common/zipball/ec0fa61cd69b47d007913102d1f73fa87dec6a71",
+                "reference": "ec0fa61cd69b47d007913102d1f73fa87dec6a71",
                 "shasum": ""
             },
             "require": {
@@ -122,10 +122,10 @@
             ],
             "description": "Expressly common PHP library",
             "support": {
-                "source": "https://github.com/expressly/php-common/tree/2.3.3",
+                "source": "https://github.com/expressly/php-common/tree/2.3.4",
                 "issues": "https://github.com/expressly/php-common/issues"
             },
-            "time": "2016-02-18 09:51:19"
+            "time": "2016-02-18 15:25:20"
         },
         {
             "name": "kriswallsmith/buzz",

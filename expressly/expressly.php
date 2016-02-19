@@ -37,13 +37,6 @@ class Expressly extends ModuleCore
         return $this->app;
     }
 
-    public function getDispatcher()
-    {
-        $this->setup();
-
-        return $this->dispatcher;
-    }
-
     /**
      * Cannot be autoloaded in the constructor as Avalara disagrees with PHP namespaces being anymore than 1 level deep.
      * Application instantiation has to now be called explicitly.
@@ -62,15 +55,22 @@ class Expressly extends ModuleCore
             $app = $expressly->getApp();
 
             // override MerchantProvider
-            $app['merchant.provider'] = $app->share(function () {
+            $app['merchant.provider'] = function () {
                 return new Module\Expressly\MerchantProvider();
-            });
+            };
 
             $this->app = $app;
             $this->dispatcher = $this->app['dispatcher'];
 
             $this->setup = true;
         }
+    }
+
+    public function getDispatcher()
+    {
+        $this->setup();
+
+        return $this->dispatcher;
     }
 
     public function getContent()
