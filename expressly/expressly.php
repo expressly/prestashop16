@@ -14,7 +14,7 @@ class Expressly extends ModuleCore
     {
         $this->name = "expressly";
         $this->tab = "advertising_marketing";
-        $this->version = "0.3.0";
+        $this->version = "2.3.12";
         $this->author = "Expressly";
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array(
@@ -149,7 +149,7 @@ class Expressly extends ModuleCore
                     array(
                         'type' => 'text',
                         'label' => 'API Key',
-                        'desc' => 'API Key provided from our <a href="https://buyexpressly.com/#/install#api">portal</a>. If you do not have an API Key, please follow the previous link for instructions on how to create one.',
+                        'desc' => 'API Key provided from our <a href="https://portal.buyexpressly.com/my-account/profile/api">portal</a>. If you do not have an API Key, please follow the previous link for instructions on how to create one.',
                         'name' => 'EXPRESSLY_PREFERENCES_APIKEY'
                     )
                 ),

@@ -10,11 +10,11 @@ use Expressly\Exception\ExceptionFormatter;
 use Expressly\Exception\GenericException;
 use Expressly\Presenter\BatchCustomerPresenter;
 use Expressly\Presenter\CustomerMigratePresenter;
-use Silex\Application;
+use Pimple\Container;
 
 class Customers
 {
-    public static function getByEmail(Application $app, $emailAddress)
+    public static function getByEmail(Container $app, $emailAddress)
     {
         try {
             if (!filter_var($emailAddress, FILTER_VALIDATE_EMAIL)) {
@@ -110,7 +110,7 @@ class Customers
         return array();
     }
 
-    public static function getBulk(Application $app)
+    public static function getBulk(Container $app)
     {
         $json = file_get_contents('php://input');
         $json = json_decode($json);

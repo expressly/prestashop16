@@ -28,15 +28,18 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
         if ($route instanceof Route) {
             switch ($route->getName()) {
                 case Ping::getName():
+                    header('Content-Type: application/json');
                     echo \Tools::jsonEncode($this->ping());
                     die;
                     break;
                 case Registered::getName():
+                    header('Content-Type: application/json');
                     echo \Tools::jsonEncode($this->registered());
                     die;
                     break;
                 case UserData::getName():
                     $data = $route->getData();
+                    header('Content-Type: application/json');
                     echo \Tools::jsonEncode(Customers::getByEmail($app, $data['email']));
                     die;
                     break;
@@ -49,10 +52,12 @@ class expresslydispatcherModuleFrontController extends ModuleFrontControllerCore
                     \Tools::redirect("migratecomplete&fc=module&module=expressly&uuid={$data['uuid']}");
                     break;
                 case BatchCustomer::getName():
+                    header('Content-Type: application/json');
                     echo \Tools::jsonEncode(Customers::getBulk($app));
                     die;
                     break;
                 case BatchInvoice::getName():
+                    header('Content-Type: application/json');
                     echo \Tools::jsonEncode(Invoices::getBulk($app));
                     die;
                     break;
