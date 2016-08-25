@@ -25,15 +25,17 @@ class Customers
 
             $psCustomer = new \CustomerCore();
             $psCustomer->getByEmail($emailAddress);
+            $hasDob = $psCustomer->birthday != null && $psCustomer->birthday != '0000-00-00' ;
 
             if ($psCustomer->id) {
                 $customer
                     ->setFirstName($psCustomer->firstname)
                     ->setLastName($psCustomer->lastname)
                     ->setCompany($psCustomer->company)
-                    ->setBirthday(new \DateTime($psCustomer->birthday))
                     ->setDateUpdated(new \DateTime($psCustomer->date_upd));
-
+                if ($hasDob) {
+                    $customer ->setBirthday(new \DateTime($psCustomer->birthday));
+                }
                 $gender = $psCustomer->id_gender ? Customer::GENDER_MALE : Customer::GENDER_FEMALE;
                 $customer->setGender($gender);
 
