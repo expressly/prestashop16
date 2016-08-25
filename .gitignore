@@ -42,3 +42,4 @@ themes/default/cache/*.css
 robots.txt
 sitemap.xml
 prestashop16.iml
+out/
