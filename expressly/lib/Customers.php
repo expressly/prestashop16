@@ -36,7 +36,7 @@ class Customers
                 if ($hasDob) {
                     $customer ->setBirthday(new \DateTime($psCustomer->birthday));
                 }
-                $gender = $psCustomer->id_gender ? Customer::GENDER_MALE : Customer::GENDER_FEMALE;
+                $gender = $psCustomer->id_gender == 1 ? Customer::GENDER_MALE : Customer::GENDER_FEMALE;
                 $customer->setGender($gender);
 
                 $email = new Email();
