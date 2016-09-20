@@ -63,6 +63,10 @@ class Customers
                     $psCountry = new \CountryCore($psAddress['id_country']);
                     $address->setCountry($psCountry->iso_code);
 
+                    if (!empty($psAddress['vat_number'])) {
+                        $customer->setTaxNumber($psAddress['vat_number']);
+                    }
+
                     /*
                      * PrestaShop uses the country prefix from the address, which is logically incorrect.
                      * An address may be in the UK, but the owner may have a DE number, this cannot be handled at current time.
@@ -76,10 +80,7 @@ class Customers
                             ->setCountryCode((int)$psCountry->call_prefix);
 
                         $customer->addPhone($phone);
-
-                        if (empty($psAddress['phone_mobile'])) {
-                            $address->setPhonePosition($customer->getPhoneIndex($phone));
-                        }
+                        $address->setPhonePosition($customer->getPhoneIndex($phone));
                     }
 
                     if (!empty($psAddress['phone_mobile'])) {

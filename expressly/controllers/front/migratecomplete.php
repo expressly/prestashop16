@@ -51,9 +51,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                 $psCustomer = new CustomerCore($id);
 
                 $app['logger']->warning(sprintf(
-                    'User %s already exists in the store %s',
-                    $email,
-                    $merchant->getName()
+                    'User %s already exists in the store',
+                    $email
+                    //$merchant->getName()
                 ));
 
                 $event = new CustomerMigrateEvent($merchant, $_GET['uuid'], CustomerMigrateEvent::EXISTING_CUSTOMER);
@@ -70,7 +70,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                 $psCustomer->optin = true;
 
                 if (!empty($customer['dob'])) {
-                    $psCustomer->birthday = date('Y-m-d', $customer['dob']);
+                    $psCustomer->birthday = $customer['dob'];
                 }
                 if (!empty($customer['companyName'])) {
                     $psCustomer->company = $customer['companyName'];
@@ -97,6 +97,12 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     if (!empty($address['address2'])) {
                         $psAddress->address2 = $address['address2'];
                     }
+                    if (!empty($address['companyName'])) {
+                        $psAddress->company = $address['companyName'];
+                    }
+                    if (!empty($customer['taxNumber'])) {
+                        $psAddress->vat_number = $customer['taxNumber'];
+                    }
 
                     $psAddress->postcode = $address['zip'];
                     $psAddress->city = $address['city'];
@@ -105,9 +111,9 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
                     $psAddress->id_country = CountryCore::getByIso($iso2);
 
                     if (!is_null($phone)) {
-                        if ($phone['type'] == Phone::PHONE_TYPE_MOBILE) {
+                        if ($phone['type'] == Phone::PHONE_TYPE_MOBILE && empty($psAddress->phone_mobile)) {
                             $psAddress->phone_mobile = $phone['number'];
-                        } elseif ($phone['type'] == Phone::PHONE_TYPE_HOME) {
+                        } else {
                             $psAddress->phone = $phone['number'];
                         }
                     }
