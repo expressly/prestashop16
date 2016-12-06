@@ -35,6 +35,8 @@ class Invoices
                     continue;
                 }
 
+                $from = \DateTime::createFromFormat('Y-m-d', $customer->from, new \DateTimeZone('UTC'));
+                $to = \DateTime::createFromFormat('Y-m-d', $customer->to, new \DateTimeZone('UTC'));
                 $invoice = new Invoice();
                 $invoice->setEmail($customer->email);
                 $psOrderIds = \OrderCore::getOrdersIdByDate($customer->from, $customer->to, $psCustomer->id);
@@ -42,19 +44,22 @@ class Invoices
                     $psOrder = new \OrderCore($id);
 
                     // if is paid
+                    $orderDate = new \DateTime($psOrder->date_add, new \DateTimeZone('UTC'));
+                    $orderDate = \DateTime::createFromFormat('Y-m-d', $orderDate->format('Y-m-d'), new \DateTimeZone('UTC'));
+                    if ($orderDate >= $from && $orderDate < $to) {
+                        $psCurrency = new \CurrencyCore($psOrder->id_currency);
+                        $tax = (double)$psOrder->total_paid_tax_incl - (double)$psOrder->total_paid_tax_excl;
 
-                    $psCurrency = new \CurrencyCore($psOrder->id_currency);
-                    $tax = (double)$psOrder->total_paid_tax_incl - (double)$psOrder->total_paid_tax_excl;
+                        $order = new Order();
+                        $order
+                            ->setId($psOrder->reference)
+                            ->setDate(new \DateTime($psOrder->date_add))
+                            ->setCurrency($psCurrency->iso_code)
+                            ->setTotal($psOrder->total_paid_tax_excl, $tax);
 
-                    $order = new Order();
-                    $order
-                        ->setId($psOrder->reference)
-                        ->setDate(new \DateTime($psOrder->date_add))
-                        ->setCurrency($psCurrency->iso_code)
-                        ->setTotal($psOrder->total_paid_tax_excl, $tax);
-
-                    $order->setItemCount(count($psOrder->getCartProducts()));
-                    $invoice->addOrder($order);
+                        $order->setItemCount(count($psOrder->getCartProducts()));
+                        $invoice->addOrder($order);
+                    }
                 }
 
                 $invoices[] = $invoice;

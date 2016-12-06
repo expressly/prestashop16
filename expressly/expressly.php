@@ -14,7 +14,7 @@ class Expressly extends ModuleCore
     {
         $this->name = "expressly";
         $this->tab = "advertising_marketing";
-        $this->version = "2.5.0";
+        $this->version = "2.5.1";
         $this->author = "Expressly";
         $this->need_instance = 1;
         $this->ps_versions_compliancy = array(
@@ -248,9 +248,9 @@ class Expressly extends ModuleCore
             $this->app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
-        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::APIKEY);
-        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::HOST);
-        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::PATH);
+//        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::APIKEY);
+//        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::HOST);
+//        ConfigurationCore::deleteByName(Module\Expressly\MerchantProvider::PATH);
 
         $this->unregisterHook('DisplayThankYouBanner');
 
