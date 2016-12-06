@@ -133,12 +133,7 @@ class Customers
                 if (!$id) {
                     continue;
                 }
-
-                if (\CustomerCore::isBanned($id)) {
-                    $users['deleted'][] = $customer;
-                } else {
-                    $users['existing'][] = $customer;
-                }
+                $users[] = $customer;
             }
         } catch (\Exception $e) {
             $app['logger']->error(ExceptionFormatter::format($e));
