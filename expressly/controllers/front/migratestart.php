@@ -15,9 +15,15 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
 
         $app = $this->module->getApp();
         $dispatcher = $this->module->getDispatcher();
+        $uuid = $_GET['uuid'];
+
+        if (empty($uuid)) {
+            Tools::redirect($this->context->shop->getBaseURL());
+            return;
+        }
 
         $merchant = $app['merchant.provider']->getMerchant();
-        $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
+        $event = new CustomerMigrateEvent($merchant, $uuid);
 
         try {
             $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_POPUP, $event);
@@ -29,12 +35,12 @@ class expresslymigratestartModuleFrontController extends ModuleFrontControllerCo
             $this->response = $event->getResponse();
         } catch (ExceptionInterface $e) {
             $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
-
-            ToolsCore::redirect('/');
+            Tools::redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
+            return;
         } catch (\Exception $e) {
             $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
-
-            ToolsCore::redirect('/');
+            Tools::redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
+            return;
         }
 
         parent::init();

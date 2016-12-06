@@ -16,9 +16,11 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
         $this->display_column_left = false;
         $this->display_column_right = false;
 
-        // get key from url
-        if (empty($_GET['uuid'])) {
-            Tools::redirect('/');
+        $uuid = $_GET['uuid'];
+
+        if (empty($uuid)) {
+            Tools::redirect($this->context->shop->getBaseURL());
+            return;
         }
 
         $app = $this->module->getApp();
@@ -27,7 +29,7 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
 
         try {
             $merchant = $app['merchant.provider']->getMerchant();
-            $event = new CustomerMigrateEvent($merchant, $_GET['uuid']);
+            $event = new CustomerMigrateEvent($merchant, $uuid);
             $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_DATA, $event);
 
             $json = $event->getContent();
@@ -206,16 +208,19 @@ class expresslymigratecompleteModuleFrontController extends ModuleFrontControlle
             }
 
             $this->context->cookie->write();
+            Tools::redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/success');
+            return;
 
-            $dispatcher->dispatch(CustomerMigrationSubscriber::CUSTOMER_MIGRATE_SUCCESS, $event);
         } catch (\Exception $e) {
             $app['logger']->error(Expressly\Exception\ExceptionFormatter::format($e));
         }
 
         if (!$existing) {
-            Tools::redirect('/');
+            Tools::redirect('https://prod.expresslyapp.com/api/redirect/migration/' . $uuid . '/failed');
+            return;
         }
 
+        $this->context->smarty->assign(array('shop_base_url' => $this->context->shop->getBaseURL()));
         parent::init();
     }
 
